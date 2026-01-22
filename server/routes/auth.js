@@ -14,15 +14,15 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    // Find admin by username
-    const admin = await getRow('SELECT * FROM admins WHERE username = ?', [username]);
+    // Find user by username
+    const user = await getRow('SELECT * FROM users WHERE username = ?', [username]);
 
-    if (!admin) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check password
-    const isValidPassword = await bcrypt.compare(password, admin.password_hash);
+    const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: admin.id, username: admin.username },
+      { id: user.user_id, username: user.username },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
@@ -39,9 +39,9 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       token,
       user: {
-        id: admin.id,
-        username: admin.username,
-        email: admin.email
+        id: user.user_id,
+        username: user.username,
+        email: user.email
       }
     });
 

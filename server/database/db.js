@@ -1,170 +1,119 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const mysql = require('mysql2/promise');
 
-// Create database path
-const dbPath = path.join(__dirname, '../data/disciplinary.db');
-console.log('Database path:', dbPath);
+// Create database connection pool
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'student_disciplinary_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
 
-// Create database connection
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-    console.error('Database path was:', dbPath);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-    initializeDatabase();
+let pool;
+
+async function initializeDatabase() {
+  try {
+    pool = mysql.createPool(dbConfig);
+
+    // Test the connection
+    const connection = await pool.getConnection();
+    console.log('Connected to MySQL database');
+
+    // Check if tables exist and create default data if needed
+    await ensureDefaultData();
+
+    connection.release();
+  } catch (error) {
+    console.error('Error connecting to MySQL database:', error.message);
+    console.error('Please ensure:');
+    console.error('1. XAMPP MySQL server is running');
+    console.error('2. Database "student_disciplinary_db" exists');
+    console.error('3. Database credentials are correct in .env file');
+    process.exit(1);
   }
-});
-
-// Initialize database tables
-function initializeDatabase() {
-  // Create students table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS students (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      grade TEXT NOT NULL,
-      class TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      parentName TEXT,
-      parentEmail TEXT,
-      parentPhone TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Create incidents table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS incidents (
-      id TEXT PRIMARY KEY,
-      studentId TEXT NOT NULL,
-      type TEXT NOT NULL,
-      severity TEXT NOT NULL,
-      description TEXT NOT NULL,
-      actionTaken TEXT,
-      status TEXT DEFAULT 'Open',
-      reportedBy TEXT NOT NULL,
-      date DATE NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (studentId) REFERENCES students (id)
-    )
-  `);
-
-  // Create communication_logs table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS communication_logs (
-      id TEXT PRIMARY KEY,
-      incidentId TEXT NOT NULL,
-      type TEXT NOT NULL,
-      recipient TEXT NOT NULL,
-      subject TEXT,
-      message TEXT NOT NULL,
-      sentAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      status TEXT DEFAULT 'Sent',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (incidentId) REFERENCES incidents (id)
-    )
-  `);
-
-  // Create admins table for authentication
-  db.run(`
-    CREATE TABLE IF NOT EXISTS admins (
-      id TEXT PRIMARY KEY,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `, [], (err) => {
-    if (err) {
-      console.error('Error creating tables:', err.message);
-    } else {
-      // Insert default admin if not exists
-      createDefaultAdmin();
-    }
-  });
 }
 
-// Create default admin user
-function createDefaultAdmin() {
-  const bcrypt = require('bcryptjs');
+// Ensure default data exists
+async function ensureDefaultData() {
+  try {
+    // Check if default admin exists
+    const [adminRows] = await pool.execute(
+      'SELECT user_id FROM users WHERE username = ?',
+      ['admin']
+    );
 
-  db.get('SELECT * FROM admins WHERE username = ?', ['admin'], (err, row) => {
-    if (err) {
-      console.error('Error checking for default admin:', err.message);
-      return;
-    }
-
-    if (!row) {
+    if (adminRows.length === 0) {
+      const bcrypt = require('bcryptjs');
       const defaultPassword = 'admin123';
       const saltRounds = 10;
 
-      bcrypt.hash(defaultPassword, saltRounds, (err, hash) => {
-        if (err) {
-          console.error('Error hashing password:', err.message);
-          return;
-        }
+      const hash = await bcrypt.hash(defaultPassword, saltRounds);
 
-        db.run(
-          'INSERT INTO admins (id, username, password_hash, email) VALUES (?, ?, ?, ?)',
-          [`admin-${Date.now()}`, 'admin', hash, 'admin@school.edu'],
-          (err) => {
-            if (err) {
-              console.error('Error creating default admin:', err.message);
-            } else {
-              console.log('Default admin created: username=admin, password=admin123');
-            }
-          }
-        );
-      });
+      await pool.execute(
+        'INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)',
+        ['admin', hash, 'Admin', 'admin@school.edu']
+      );
+
+      console.log('Default admin created: username=admin, password=admin123');
     }
-  });
+
+    // Check if default violation exists
+    const [violationRows] = await pool.execute(
+      'SELECT violation_id FROM violations WHERE violation_name = ?',
+      ['Late Attendance']
+    );
+
+    if (violationRows.length === 0) {
+      await pool.execute(
+        'INSERT INTO violations (violation_name, category, severity_level, description) VALUES (?, ?, ?, ?)',
+        ['Late Attendance', 'Attendance', 'Minor', 'Student arrived late to class']
+      );
+
+      console.log('Default violation added');
+    }
+
+  } catch (error) {
+    console.error('Error ensuring default data:', error.message);
+  }
 }
 
-// Helper function to run queries with promises
-function runQuery(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ id: this.lastID, changes: this.changes });
-      }
-    });
-  });
+// Helper function to execute queries
+async function executeQuery(sql, params = []) {
+  try {
+    const [rows, fields] = await pool.execute(sql, params);
+    return rows;
+  } catch (error) {
+    console.error('Database query error:', error);
+    throw error;
+  }
 }
 
 // Helper function to get single row
-function getRow(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row);
-      }
-    });
-  });
+async function getRow(sql, params = []) {
+  const rows = await executeQuery(sql, params);
+  return rows[0] || null;
 }
 
 // Helper function to get all rows
-function getAllRows(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
+async function getAllRows(sql, params = []) {
+  return await executeQuery(sql, params);
+}
+
+// Helper function to run insert/update/delete queries
+async function runQuery(sql, params = []) {
+  const result = await executeQuery(sql, params);
+  return {
+    insertId: result.insertId,
+    affectedRows: result.affectedRows
+  };
 }
 
 module.exports = {
-  db,
-  runQuery,
+  initializeDatabase,
+  executeQuery,
   getRow,
-  getAllRows
+  getAllRows,
+  runQuery
 };
