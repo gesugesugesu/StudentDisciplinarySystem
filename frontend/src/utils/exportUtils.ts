@@ -118,11 +118,11 @@ export function exportToPDF(incidents: Incident[], students: Student[], filename
 
 export function exportStudentReport(student: Student, incidents: Incident[], filename?: string) {
   const doc = new jsPDF();
-  
+
   // Add title
   doc.setFontSize(18);
   doc.text("Student Disciplinary Report", 14, 22);
-  
+
   // Student information
   doc.setFontSize(12);
   doc.text("Student Information", 14, 35);
@@ -131,17 +131,17 @@ export function exportStudentReport(student: Student, incidents: Incident[], fil
   doc.text(`Grade: ${student.grade}`, 14, 50);
   doc.text(`Class: ${student.class}`, 14, 57);
   doc.text(`Email: ${student.email}`, 14, 64);
-  
+
   if (student.parentName) {
     doc.text(`Parent: ${student.parentName}`, 14, 71);
     doc.text(`Parent Email: ${student.parentEmail || "N/A"}`, 14, 78);
     doc.text(`Parent Phone: ${student.parentPhone || "N/A"}`, 14, 85);
   }
-  
+
   // Incidents table
   doc.setFontSize(12);
   doc.text("Incident History", 14, student.parentName ? 95 : 75);
-  
+
   const tableData = incidents.map(incident => {
     return [
       format(new Date(incident.date), "MM/dd/yy"),
@@ -164,6 +164,55 @@ export function exportStudentReport(student: Student, incidents: Incident[], fil
   // Save the PDF
   const pdfFilename = filename || `${student.name.replace(/\s+/g, "-")}-report.pdf`;
   doc.save(pdfFilename);
+}
+
+export function exportStudentIncidentsCSV(student: Student, incidents: Incident[], filename?: string) {
+  // Prepare CSV headers
+  const headers = [
+    "Date",
+    "Type",
+    "Severity",
+    "Description",
+    "Action Taken",
+    "Status",
+    "Reported By",
+    "Parent Notified"
+  ];
+
+  // Prepare CSV rows
+  const rows = incidents.map(incident => {
+    const hasParentNotification = incident.communicationLogs && incident.communicationLogs.length > 0;
+
+    return [
+      format(new Date(incident.date), "MM/dd/yyyy"),
+      incident.type,
+      incident.severity,
+      incident.description,
+      incident.actionTaken,
+      incident.status,
+      incident.reportedBy,
+      hasParentNotification ? "Yes" : "No"
+    ];
+  });
+
+  // Combine headers and rows
+  const csvContent = [
+    headers.join(","),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+  ].join("\n");
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  const csvFilename = filename || `${student.name.replace(/\s+/g, "-")}-incidents.csv`;
+  link.setAttribute("href", url);
+  link.setAttribute("download", csvFilename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 export function filterIncidentsByWeek(incidents: Incident[]): Incident[] {

@@ -21,7 +21,7 @@ import { ArrowLeft, User, Mail, GraduationCap, MoreVertical, Edit, Trash2, Bell,
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
 import { useState } from "react";
-import { exportStudentReport } from "../utils/exportUtils";
+import { exportStudentReport, exportStudentIncidentsCSV } from "../utils/exportUtils";
 import { toast } from "sonner@2.0.3";
 
 interface StudentProfileProps {
@@ -62,9 +62,14 @@ export function StudentProfile({
     }
   };
   
-  const handleExportReport = () => {
+  const handleExportPDF = () => {
     exportStudentReport(student, studentIncidents);
     toast.success("Student report exported to PDF");
+  };
+
+  const handleExportCSV = () => {
+    exportStudentIncidentsCSV(student, studentIncidents);
+    toast.success("Student incidents exported to CSV");
   };
   
   return (
@@ -77,10 +82,22 @@ export function StudentProfile({
           <h2>Student Profile</h2>
           <p className="text-muted-foreground">View detailed disciplinary record</p>
         </div>
-        <Button variant="outline" onClick={handleExportReport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={handleExportCSV}>
+              Export as CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPDF}>
+              Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button onClick={onAddIncident}>Add Incident</Button>
       </div>
       
