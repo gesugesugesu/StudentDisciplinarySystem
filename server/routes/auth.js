@@ -8,19 +8,25 @@ const router = express.Router();
 // Register new user (admin/faculty)
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, email, fullName, department, role } = req.body;
+    const { username, password, email, fullName, role, studentId, contactNumber, course, yearLevel } = req.body;
 
-    if (!username || !password || !email || !fullName || !department || !role) {
+    if (!username || !password || !email || !fullName || !role) {
       return res.status(400).json({
-        error: 'Username, password, email, full name, department, and role are required'
+        error: 'Username, password, email, full name, and role are required'
+      });
+    }
+
+    if (role === 'Student' && (!studentId || !contactNumber || !course || !yearLevel)) {
+      return res.status(400).json({
+        error: 'Student ID, contact number, course, and year level are required for students'
       });
     }
 
     // Validate role
-    const validRoles = ['Admin', 'Discipline Officer', 'Guidance Counselor'];
+    const validRoles = ['Admin', 'Student', 'Faculty Staff'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
-        error: 'Invalid role. Must be Admin, Discipline Officer, or Guidance Counselor'
+        error: 'Invalid role. Must be Admin, Student, or Faculty Staff'
       });
     }
 
@@ -43,11 +49,23 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = await runQuery(
-      'INSERT INTO users (username, password, email, full_name, department, role) VALUES (?, ?, ?, ?, ?, ?)',
-      [username, hashedPassword, email, fullName, department, role]
+      'INSERT INTO users (username, password, email, full_name, role) VALUES (?, ?, ?, ?, ?)',
+      [username, hashedPassword, email, fullName, role]
     );
 
-    const newUser = await getRow('SELECT user_id, username, email, full_name, department, role, created_at FROM users WHERE user_id = ?', [result.insertId]);
+    // If registering as student, also create student record
+    if (role === 'Student') {
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      await runQuery(
+        'INSERT INTO students (student_number, first_name, last_name, course, year_level, contact_number, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [studentId, firstName, lastName, course, parseInt(yearLevel), contactNumber, 'Active']
+      );
+    }
+
+    const newUser = await getRow('SELECT user_id, username, email, full_name, role, created_at FROM users WHERE user_id = ?', [result.insertId]);
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -56,7 +74,6 @@ router.post('/register', async (req, res) => {
         username: newUser.username,
         email: newUser.email,
         fullName: newUser.full_name,
-        department: newUser.department,
         role: newUser.role,
         createdAt: newUser.created_at
       }
@@ -106,7 +123,6 @@ router.post('/login', async (req, res) => {
         username: user.username,
         email: user.email,
         fullName: user.full_name,
-        department: user.department,
         role: user.role
       }
     });
@@ -144,7 +160,7 @@ router.get('/users', verifyToken, async (req, res) => {
     }
 
     const users = await getAllRows(
-      'SELECT user_id, username, email, full_name, department, role, created_at FROM users ORDER BY created_at DESC'
+      'SELECT user_id, username, email, full_name, role, created_at FROM users ORDER BY created_at DESC'
     );
 
     res.json(users);

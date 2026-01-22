@@ -53,6 +53,22 @@ async function ensureDefaultData() {
       // Column might already exist, ignore error
     }
 
+    // Update role enum to include Student and Faculty Staff
+    try {
+      await pool.execute("ALTER TABLE users MODIFY COLUMN role ENUM('Admin','Student','Faculty Staff')");
+      console.log('Updated role enum to include Student and Faculty Staff');
+    } catch (error) {
+      // Enum might already be updated, ignore error
+    }
+
+    // Add contact_number column to students table if it doesn't exist
+    try {
+      await pool.execute('ALTER TABLE students ADD COLUMN contact_number VARCHAR(20)');
+      console.log('Added contact_number column to students table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
     // Check if default admin exists
     const [adminRows] = await pool.execute(
       'SELECT user_id FROM users WHERE username = ?',
@@ -67,8 +83,8 @@ async function ensureDefaultData() {
       const hash = await bcrypt.hash(defaultPassword, saltRounds);
 
       await pool.execute(
-        'INSERT INTO users (username, password, role, email, full_name, department) VALUES (?, ?, ?, ?, ?, ?)',
-        ['admin', hash, 'Admin', 'admin@school.edu', 'System Administrator', 'Administration']
+        'INSERT INTO users (username, password, role, email, full_name) VALUES (?, ?, ?, ?, ?)',
+        ['admin', hash, 'Admin', 'admin@school.edu', 'System Administrator']
       );
 
       console.log('Default admin created: username=admin, password=admin123');

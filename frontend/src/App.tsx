@@ -8,7 +8,7 @@ import { AllIncidents } from "./components/AllIncidents";
 import { AddIncidentDialog } from "./components/AddIncidentDialog";
 import { EditIncidentDialog } from "./components/EditIncidentDialog";
 import { ParentNotificationDialog } from "./components/ParentNotificationDialog";
-import { AdminLogin } from "./components/AdminLogin";
+import { Login } from "./components/Login";
 import { StudentEmailDialog } from "./components/StudentEmailDialog";
 import { StudentView } from "./components/StudentView";
 import { students as initialStudents, incidents as initialIncidents } from "./data/mockData";
@@ -35,9 +35,22 @@ export default function App() {
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
   
-  const handleAdminLogin = () => {
-    setIsAdminLoggedIn(true);
-    toast.success("Logged in successfully");
+  const handleAdminLogin = (user: any) => {
+    if (user.role === 'Student') {
+      // For students, find their student record and show student view
+      const student = students.find(s => s.email.toLowerCase() === user.email.toLowerCase());
+      if (student) {
+        setCurrentStudentId(student.id);
+        setIsStudentViewOpen(true);
+        toast.success(`Welcome, ${student.name}`);
+      } else {
+        toast.error("Student record not found. Please contact administrator.");
+      }
+    } else {
+      // For admin/faculty staff, show admin dashboard
+      setIsAdminLoggedIn(true);
+      toast.success("Logged in successfully");
+    }
   };
   
   const handleAdminLogout = () => {
@@ -165,10 +178,7 @@ export default function App() {
     return (
       <>
         <Toaster />
-        <AdminLogin 
-          onLogin={handleAdminLogin} 
-          onStudentViewClick={handleStudentViewClick}
-        />
+        <Login onLogin={handleAdminLogin} />
         <StudentEmailDialog
           open={isStudentEmailDialogOpen}
           onOpenChange={setIsStudentEmailDialogOpen}
