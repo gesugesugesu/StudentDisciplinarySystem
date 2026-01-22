@@ -4,11 +4,14 @@ Express.js API server for the Student Disciplinary Record System.
 
 ## Features
 
-- **Authentication**: JWT-based admin authentication
-- **Students Management**: CRUD operations for student records
-- **Incidents Management**: Full incident tracking with communication logs
-- **SQLite Database**: Lightweight, file-based database
-- **RESTful API**: Clean REST endpoints
+- **Authentication**: JWT-based user authentication with role management
+- **User Management**: Admin/faculty registration and management
+- **Students Management**: Complete CRUD operations for student records
+- **Disciplinary Records**: Full incident tracking and management
+- **Sanctions Management**: Disciplinary actions and sanctions tracking
+- **Audit Logging**: Complete audit trail for all system activities
+- **MySQL Database**: Connected to XAMPP MySQL database
+- **RESTful API**: Clean REST endpoints with proper error handling
 
 ## Setup
 
@@ -49,29 +52,47 @@ Express.js API server for the Student Disciplinary Record System.
 - `PUT /api/students/:id` - Update student
 - `DELETE /api/students/:id` - Delete student
 
-### Incidents
-- `GET /api/incidents` - Get all incidents
-- `GET /api/incidents/:id` - Get incident by ID
-- `POST /api/incidents` - Create new incident
-- `PUT /api/incidents/:id` - Update incident
-- `DELETE /api/incidents/:id` - Delete incident
-- `POST /api/incidents/:id/communication` - Add communication log
-- `GET /api/incidents/:id/communication` - Get communication logs
+### Disciplinary Records (Incidents)
+- `GET /api/incidents` - List all disciplinary records
+- `GET /api/incidents/:id` - Get disciplinary record details
+- `POST /api/incidents` - Create new disciplinary record
+- `PUT /api/incidents/:id` - Update disciplinary record
+- `DELETE /api/incidents/:id` - Delete disciplinary record
+- `GET /api/incidents/violations/list` - Get all violation types
+
+### Sanctions Management
+- `GET /api/sanctions` - List all sanctions
+- `GET /api/sanctions/record/:recordId` - Get sanctions for specific record
+- `POST /api/sanctions` - Create new sanction
+- `PUT /api/sanctions/:id` - Update sanction
+- `DELETE /api/sanctions/:id` - Delete sanction
+
+### Audit Logs
+- `GET /api/audit` - Get all audit logs (admin only)
+- `GET /api/audit/user/:userId` - Get audit logs for specific user
+- `POST /api/audit` - Create manual audit log entry
+- `GET /api/audit/stats/summary` - Get audit statistics (admin only)
 
 ### Health Check
 - `GET /api/health` - Server health status
 
 ## Database Schema
 
-### Tables
-- `admins` - Admin users
-- `students` - Student information
-- `incidents` - Disciplinary incidents
-- `communication_logs` - Parent/admin communications
+### Tables (Connected to XAMPP MySQL)
+- `users` - Admin/faculty users with roles and departments
+- `students` - Student information (first_name, last_name, course, year_level, etc.)
+- `disciplinary_records` - Disciplinary incidents/records
+- `violations` - Types of violations with severity levels
+- `sanctions` - Disciplinary sanctions and actions
+- `audit_logs` - Complete audit trail of system activities
 
 ## Environment Variables
 
 - `PORT` - Server port (default: 5000)
+- `DB_HOST` - MySQL host (default: localhost)
+- `DB_USER` - MySQL username (default: root)
+- `DB_PASSWORD` - MySQL password (default: empty)
+- `DB_NAME` - MySQL database name (default: student_disciplinary_db)
 - `JWT_SECRET` - JWT signing secret
 - `NODE_ENV` - Environment (development/production)
 
