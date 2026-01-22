@@ -37,7 +37,9 @@ Express.js API server for the Student Disciplinary Record System.
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - Admin login
+- `POST /api/auth/register` - Register new admin/faculty user
+- `POST /api/auth/login` - Admin/faculty login
+- `GET /api/auth/users` - Get all users (admin only)
 - `GET /api/auth/verify` - Verify JWT token
 
 ### Students

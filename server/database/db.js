@@ -38,6 +38,21 @@ async function initializeDatabase() {
 // Ensure default data exists
 async function ensureDefaultData() {
   try {
+    // Add new columns to users table if they don't exist
+    try {
+      await pool.execute('ALTER TABLE users ADD COLUMN full_name VARCHAR(100)');
+      console.log('Added full_name column to users table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    try {
+      await pool.execute('ALTER TABLE users ADD COLUMN department VARCHAR(100)');
+      console.log('Added department column to users table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
     // Check if default admin exists
     const [adminRows] = await pool.execute(
       'SELECT user_id FROM users WHERE username = ?',
@@ -52,8 +67,8 @@ async function ensureDefaultData() {
       const hash = await bcrypt.hash(defaultPassword, saltRounds);
 
       await pool.execute(
-        'INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)',
-        ['admin', hash, 'Admin', 'admin@school.edu']
+        'INSERT INTO users (username, password, role, email, full_name, department) VALUES (?, ?, ?, ?, ?, ?)',
+        ['admin', hash, 'Admin', 'admin@school.edu', 'System Administrator', 'Administration']
       );
 
       console.log('Default admin created: username=admin, password=admin123');
