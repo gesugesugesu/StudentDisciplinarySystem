@@ -77,8 +77,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    // Find user by username
-    const user = await getRow('SELECT * FROM users WHERE username = ?', [username]);
+    // Find user by username or email
+    const user = await getRow('SELECT * FROM users WHERE username = ? OR email = ?', [username, username]);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
