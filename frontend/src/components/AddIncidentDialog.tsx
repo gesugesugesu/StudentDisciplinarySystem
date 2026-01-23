@@ -70,9 +70,9 @@ export function AddIncidentDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="student">Student</Label>
-            <Select 
-              value={formData.studentId} 
-              onValueChange={(value) => setFormData({ ...formData, studentId: value })}
+            <Select
+              value={formData.studentId}
+              onValueChange={(value: string) => setFormData({ ...formData, studentId: value })}
               required
             >
               <SelectTrigger>
@@ -92,8 +92,8 @@ export function AddIncidentDialog({
             <div className="space-y-2">
               <Label htmlFor="type">Incident Type</Label>
               <Select 
-                value={formData.type} 
-                onValueChange={(value) => setFormData({ ...formData, type: value as IncidentType })}
+                value={formData.type}
+                onValueChange={(value: string) => setFormData({ ...formData, type: value as IncidentType })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -111,8 +111,8 @@ export function AddIncidentDialog({
             <div className="space-y-2">
               <Label htmlFor="severity">Severity</Label>
               <Select 
-                value={formData.severity} 
-                onValueChange={(value) => setFormData({ ...formData, severity: value as Severity })}
+                value={formData.severity}
+                onValueChange={(value: string) => setFormData({ ...formData, severity: value as Severity })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -140,9 +140,9 @@ export function AddIncidentDialog({
             
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value) => setFormData({ ...formData, status: value as Status })}
+              <Select
+                value={formData.status}
+                onValueChange={(value: string) => setFormData({ ...formData, status: value as Status })}
               >
                 <SelectTrigger>
                   <SelectValue />

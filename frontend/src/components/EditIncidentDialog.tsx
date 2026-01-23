@@ -59,7 +59,7 @@ export function EditIncidentDialog({
               <Label htmlFor="edit-type">Incident Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value as IncidentType })}
+                onValueChange={(value: string) => setFormData({ ...formData, type: value as IncidentType })}
               >
                 <SelectTrigger id="edit-type">
                   <SelectValue />
@@ -78,7 +78,7 @@ export function EditIncidentDialog({
               <Label htmlFor="edit-severity">Severity</Label>
               <Select
                 value={formData.severity}
-                onValueChange={(value) => setFormData({ ...formData, severity: value as Severity })}
+                onValueChange={(value: string) => setFormData({ ...formData, severity: value as Severity })}
               >
                 <SelectTrigger id="edit-severity">
                   <SelectValue />
@@ -110,7 +110,7 @@ export function EditIncidentDialog({
               <Label htmlFor="edit-status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as Status })}
+                onValueChange={(value: string) => setFormData({ ...formData, status: value as Status })}
               >
                 <SelectTrigger id="edit-status">
                   <SelectValue />

@@ -60,10 +60,6 @@ export default function App() {
     toast.success("Logged out successfully");
   };
   
-  const handleStudentViewClick = () => {
-    setIsStudentEmailDialogOpen(true);
-  };
-  
   const handleStudentEmailSubmit = (email: string) => {
     const student = students.find(s => s.email.toLowerCase() === email.toLowerCase());
     if (student) {
@@ -293,12 +289,6 @@ export default function App() {
           incident={selectedIncident}
         />
       )}
-      
-      <StudentEmailDialog
-        open={isStudentEmailDialogOpen}
-        onOpenChange={setIsStudentEmailDialogOpen}
-        onSubmit={handleStudentEmailSubmit}
-      />
     </div>
   );
 }

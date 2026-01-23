@@ -142,7 +142,7 @@ export function ParentNotificationDialog({
             
             <div className="space-y-2">
               <Label htmlFor="method">Communication Method</Label>
-              <Select value={method} onValueChange={(value) => setMethod(value as CommunicationLog["method"])}>
+              <Select value={method} onValueChange={(value: string) => setMethod(value as CommunicationLog["method"])}>
                 <SelectTrigger id="method">
                   <SelectValue />
                 </SelectTrigger>
