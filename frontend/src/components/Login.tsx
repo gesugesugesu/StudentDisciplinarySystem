@@ -183,10 +183,10 @@ export function Login({ onLogin }: LoginProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4">
 
       <Card className="w-full max-w-md p-8">
-        <div className="flex flex-col items-center mb-8">
-          <ImageWithFallback 
-            src={logo} 
-            alt="ACTS Computer College" 
+        <div className="flex flex-col items-center">
+          <ImageWithFallback
+            src={logo}
+            alt="ACTS Computer College"
             className="h-32 w-32 mb-4"
           />
           <h1 className="text-center mb-2">D-Manage: Automated Student Disciplinary Management</h1>
