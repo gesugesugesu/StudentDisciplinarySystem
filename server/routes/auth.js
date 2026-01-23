@@ -8,11 +8,11 @@ const router = express.Router();
 // Register new user (admin/faculty)
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, email, fullName, role, studentId, contactNumber, course, yearLevel } = req.body;
+    const { password, email, fullName, role, studentId, contactNumber, course, yearLevel } = req.body;
 
-    if (!username || !password || !email || !fullName || !role) {
+    if (!password || !email || !fullName || !role) {
       return res.status(400).json({
-        error: 'Username, password, email, full name, and role are required'
+        error: 'Password, email, full name, and role are required'
       });
     }
 
@@ -30,12 +30,6 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if username already exists
-    const existingUsername = await getRow('SELECT user_id FROM users WHERE username = ?', [username]);
-    if (existingUsername) {
-      return res.status(400).json({ error: 'Username already exists' });
-    }
-
     // Check if email already exists
     const existingEmail = await getRow('SELECT user_id FROM users WHERE email = ?', [email]);
     if (existingEmail) {
@@ -49,8 +43,8 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = await runQuery(
-      'INSERT INTO users (username, password, email, full_name, role) VALUES (?, ?, ?, ?, ?)',
-      [username, hashedPassword, email, fullName, role]
+      'INSERT INTO users (password, email, full_name, role) VALUES (?, ?, ?, ?)',
+      [hashedPassword, email, fullName, role]
     );
 
     // If registering as student, also create student record
@@ -65,13 +59,12 @@ router.post('/register', async (req, res) => {
       );
     }
 
-    const newUser = await getRow('SELECT user_id, username, email, full_name, role, created_at FROM users WHERE user_id = ?', [result.insertId]);
+    const newUser = await getRow('SELECT user_id, email, full_name, role, created_at FROM users WHERE user_id = ?', [result.insertId]);
 
     res.status(201).json({
       message: 'User registered successfully',
       user: {
         id: newUser.user_id,
-        username: newUser.username,
         email: newUser.email,
         fullName: newUser.full_name,
         role: newUser.role,
@@ -88,14 +81,14 @@ router.post('/register', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user by username or email
-    const user = await getRow('SELECT * FROM users WHERE username = ? OR email = ?', [username, username]);
+    // Find user by email
+    const user = await getRow('SELECT * FROM users WHERE email = ?', [email]);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -110,7 +103,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.user_id, username: user.username },
+      { id: user.user_id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
@@ -120,7 +113,6 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user.user_id,
-        username: user.username,
         email: user.email,
         fullName: user.full_name,
         role: user.role
@@ -160,7 +152,7 @@ router.get('/users', verifyToken, async (req, res) => {
     }
 
     const users = await getAllRows(
-      'SELECT user_id, username, email, full_name, role, created_at FROM users ORDER BY created_at DESC'
+      'SELECT user_id, email, full_name, role, created_at FROM users ORDER BY created_at DESC'
     );
 
     res.json(users);

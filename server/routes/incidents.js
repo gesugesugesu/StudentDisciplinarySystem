@@ -69,7 +69,7 @@ router.get('/:id', verifyToken, async (req, res) => {
              v.violation_name as type,
              v.severity_level as severity,
              v.description,
-             u.username as reportedByName
+             u.full_name as reportedByName
       FROM disciplinary_records dr
       LEFT JOIN students s ON dr.student_id = s.student_id
       LEFT JOIN violations v ON dr.violation_id = v.violation_id
@@ -125,8 +125,8 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid violation type' });
     }
 
-    // Find user by username for reported_by
-    const user = await getRow('SELECT user_id FROM users WHERE username = ?', [reportedBy]);
+    // Find user by email for reported_by
+    const user = await getRow('SELECT user_id FROM users WHERE email = ?', [reportedBy]);
     const reportedById = user ? user.user_id : null;
 
     const result = await runQuery(
@@ -149,7 +149,7 @@ router.post('/', verifyToken, async (req, res) => {
              v.violation_name as type,
              v.severity_level as severity,
              v.description,
-             u.username as reportedByName
+             u.full_name as reportedByName
       FROM disciplinary_records dr
       LEFT JOIN students s ON dr.student_id = s.student_id
       LEFT JOIN violations v ON dr.violation_id = v.violation_id

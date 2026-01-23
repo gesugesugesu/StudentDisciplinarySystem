@@ -104,7 +104,6 @@ export function Login({ onLogin }: LoginProps) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            username: email, // Use email as username
             password,
             email,
             fullName,
@@ -158,7 +157,7 @@ export function Login({ onLogin }: LoginProps) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            username: email, // Using email as username for login
+            email,
             password,
           }),
         });
@@ -293,7 +292,7 @@ export function Login({ onLogin }: LoginProps) {
               <Input
                 id="email"
                 type="text"
-                placeholder="Enter username or email"
+                placeholder="Enter email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 onKeyPress={(e) => e.key === "Enter" && handleSubmit()}

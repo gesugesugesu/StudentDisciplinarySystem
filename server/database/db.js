@@ -71,8 +71,8 @@ async function ensureDefaultData() {
 
     // Check if default admin exists
     const [adminRows] = await pool.execute(
-      'SELECT user_id FROM users WHERE username = ?',
-      ['admin']
+      'SELECT user_id FROM users WHERE email = ?',
+      ['admin@school.edu']
     );
 
     if (adminRows.length === 0) {
@@ -83,11 +83,11 @@ async function ensureDefaultData() {
       const hash = await bcrypt.hash(defaultPassword, saltRounds);
 
       await pool.execute(
-        'INSERT INTO users (username, password, role, email, full_name) VALUES (?, ?, ?, ?, ?)',
-        ['admin', hash, 'Admin', 'admin@school.edu', 'System Administrator']
+        'INSERT INTO users (password, role, email, full_name) VALUES (?, ?, ?, ?)',
+        [hash, 'Admin', 'admin@school.edu', 'System Administrator']
       );
 
-      console.log('Default admin created: username=admin, password=admin123');
+      console.log('Default admin created: email=admin@school.edu, password=admin123');
     }
 
     // Check if default violation exists

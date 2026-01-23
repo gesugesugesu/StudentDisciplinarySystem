@@ -15,7 +15,6 @@ router.get('/', verifyToken, async (req, res) => {
 
     const logs = await getAllRows(`
       SELECT al.*,
-             u.username,
              u.full_name
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.user_id
@@ -41,7 +40,6 @@ router.get('/user/:userId', verifyToken, async (req, res) => {
 
     const logs = await getAllRows(`
       SELECT al.*,
-             u.username,
              u.full_name
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.user_id
