@@ -301,7 +301,7 @@ export function Login({ onLogin }: LoginProps) {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <div className="relative">
+              <div className="flex">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -309,12 +309,14 @@ export function Login({ onLogin }: LoginProps) {
                   value={formData.password}
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                  className="pr-10"
+                  className="flex-1"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
+                  className="ml-2 p-2 flex items-center justify-center"
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
@@ -333,7 +335,7 @@ export function Login({ onLogin }: LoginProps) {
             {isRegistering && (
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
+                <div className="flex">
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
@@ -341,12 +343,14 @@ export function Login({ onLogin }: LoginProps) {
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                    className="pr-10"
+                    className="flex-1"
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="ml-2 p-2 flex items-center justify-center"
+                    onMouseDown={() => setShowConfirmPassword(true)}
+                    onMouseUp={() => setShowConfirmPassword(false)}
+                    onMouseLeave={() => setShowConfirmPassword(false)}
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
