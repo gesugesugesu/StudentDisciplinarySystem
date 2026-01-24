@@ -69,6 +69,14 @@ async function ensureDefaultData() {
       // Column might already exist, ignore error
     }
 
+    // Drop student_id_number column if it exists (no longer needed)
+    try {
+      await pool.execute('ALTER TABLE students DROP COLUMN student_id_number');
+      console.log('Dropped student_id_number column from students table');
+    } catch (error) {
+      // Column might not exist, ignore error
+    }
+
     // Check if default admin exists
     const [adminRows] = await pool.execute(
       'SELECT user_id FROM users WHERE email = ?',

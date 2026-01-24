@@ -16,9 +16,9 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    if (role === 'Student' && (!studentId || !contactNumber || !course || !yearLevel)) {
+    if (role === 'Student' && (!contactNumber || !course || !yearLevel)) {
       return res.status(400).json({
-        error: 'Student ID, contact number, course, and year level are required for students'
+        error: 'Contact number, course, and year level are required for students'
       });
     }
 
@@ -54,8 +54,8 @@ router.post('/register', async (req, res) => {
       const lastName = nameParts.slice(1).join(' ') || '';
 
       await runQuery(
-        'INSERT INTO students (student_number, first_name, last_name, course, year_level, contact_number, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [studentId, firstName, lastName, course, parseInt(yearLevel), contactNumber, 'Active']
+        'INSERT INTO students (first_name, last_name, course, year_level, contact_number, email, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [firstName, lastName, course, parseInt(yearLevel), contactNumber, email, 'Active']
       );
     }
 

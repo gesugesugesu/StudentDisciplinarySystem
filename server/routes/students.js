@@ -41,7 +41,6 @@ router.get('/:id', verifyToken, async (req, res) => {
   try {
     const student = await getRow(`
       SELECT student_id as id,
-             student_number,
              first_name,
              last_name,
              course as grade,
@@ -64,7 +63,6 @@ router.get('/:id', verifyToken, async (req, res) => {
       class: student.yearLevel ? `Year ${student.yearLevel}` : '',
       email: '', // Not in current schema
       status: student.status,
-      studentNumber: student.student_number,
       createdAt: student.created_at
     };
 
@@ -93,9 +91,9 @@ router.post('/', verifyToken, async (req, res) => {
     const yearLevel = className ? parseInt(className.replace('Year ', '')) || null : null;
 
     const result = await runQuery(
-      `INSERT INTO students (student_number, first_name, last_name, course, year_level, status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [`${Date.now()}`, firstName, lastName, grade, yearLevel, 'Active']
+      `INSERT INTO students (first_name, last_name, course, year_level, status)
+       VALUES (?, ?, ?, ?, ?)`,
+      [firstName, lastName, grade, yearLevel, 'Active']
     );
 
     const newStudent = await getRow(`
