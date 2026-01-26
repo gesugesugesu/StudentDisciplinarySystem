@@ -32,7 +32,7 @@ export interface CommunicationLog {
   parentNotified: boolean;
 }
 
-export type UserRole = "Admin" | "Faculty Staff" | "Super Admin";
+export type UserRole = "Admin" | "Faculty Staff" | "Super Admin" | "Student";
 export type UserStatus = "pending" | "approved" | "rejected" | "suspended";
 
 export interface User {

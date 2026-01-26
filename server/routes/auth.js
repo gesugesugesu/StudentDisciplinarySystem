@@ -23,10 +23,10 @@ router.post('/register', async (req, res) => {
     }
 
     // Validate role
-    const validRoles = ['Admin', 'Student', 'Faculty Staff'];
+    const validRoles = ['Faculty Staff', 'Student'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
-        error: 'Invalid role. Must be Admin, Student, or Faculty Staff'
+        error: 'Invalid role. Must be Faculty Staff or Student'
       });
     }
 
