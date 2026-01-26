@@ -200,7 +200,7 @@ export default function App() {
               />
               <div>
                 <h1>D-Manage: Automated Student Disciplinary Management</h1>
-                <p className="text-muted-foreground">ACTS Computer College - Administrator</p>
+                <p className="text-muted-foreground">ACTS Computer College</p>
               </div>
             </div>
             
