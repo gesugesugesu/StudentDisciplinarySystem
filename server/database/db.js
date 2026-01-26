@@ -135,6 +135,34 @@ async function ensureDefaultData() {
       console.log('Updated existing admin to Super Admin role and approved status');
     }
 
+    // Check if default faculty exists
+    const [facultyRows] = await pool.execute(
+      'SELECT user_id FROM users WHERE email = ?',
+      ['faculty@acts.edu']
+    );
+
+    if (facultyRows.length === 0) {
+      const bcrypt = require('bcryptjs');
+      const defaultPassword = 'faculty123';
+      const saltRounds = 10;
+
+      const hash = await bcrypt.hash(defaultPassword, saltRounds);
+
+      await pool.execute(
+        'INSERT INTO users (password, role, email, full_name, status) VALUES (?, ?, ?, ?, ?)',
+        [hash, 'Faculty Staff', 'faculty@acts.edu', 'Faculty Member', 'approved']
+      );
+
+      console.log('Default faculty created: email=faculty@acts.edu, password=faculty123');
+    } else {
+      // Update existing faculty to Faculty Staff role and approved status
+      await pool.execute(
+        "UPDATE users SET role = 'Faculty Staff', status = 'approved' WHERE email = ?",
+        ['faculty@acts.edu']
+      );
+      console.log('Updated existing faculty to Faculty Staff role and approved status');
+    }
+
     // Check if default violation exists
     const [violationRows] = await pool.execute(
       'SELECT violation_id FROM violations WHERE violation_name = ?',
