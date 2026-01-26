@@ -32,6 +32,19 @@ export interface CommunicationLog {
   parentNotified: boolean;
 }
 
+export type UserRole = "Admin" | "Faculty Staff" | "Super Admin";
+export type UserStatus = "pending" | "approved" | "rejected" | "suspended";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Incident {
   id: string;
   studentId: string;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -13,21 +14,13 @@ interface LoginProps {
 }
 
 export function Login({ onLogin }: LoginProps) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
-    confirmPassword: "",
-    fullName: "",
-    role: "",
-    studentId: "",
-    contactNumber: "",
-    course: "",
-    yearLevel: ""
+    password: ""
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (email: string) => {
@@ -51,126 +44,45 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
 
     try {
-      if (isRegistering) {
-        // Registration
-        const { email, password, confirmPassword, fullName, role, studentId, contactNumber, course, yearLevel } = formData;
+      const { email, password } = formData;
+      if (!email || !password) {
+        setError("Please fill in email and password");
+        setLoading(false);
+        return;
+      }
 
-        // Basic required fields validation
-        if (!email || !password || !confirmPassword || !fullName || !role) {
-          setError("Please fill in all required fields");
-          setLoading(false);
-          return;
+      if (!validateEmail(email)) {
+        setError("Please enter a valid email address");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        onLogin(data.user);
+        // Navigate based on role
+        if (data.user.role === 'Admin' || data.user.role === 'Super Admin') {
+          navigate('/admin');
+        } else if (data.user.role === 'Faculty Staff') {
+          navigate('/');
         }
-
-        // Email validation
-        if (!validateEmail(email)) {
-          setError("Please enter a valid email address");
-          setLoading(false);
-          return;
-        }
-
-        // Password validation
-        if (!validatePassword(password)) {
-          setError("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number");
-          setLoading(false);
-          return;
-        }
-
-        // Confirm password validation
-        if (password !== confirmPassword) {
-          setError("Passwords do not match");
-          setLoading(false);
-          return;
-        }
-
-        // Student-specific validation
-        if (role === "Student") {
-          if (!studentId || !contactNumber || !course || !yearLevel) {
-            setError("Please fill in all student-specific fields");
-            setLoading(false);
-            return;
-          }
-
-          if (!validateStudentId(studentId)) {
-            setError("Student ID must be exactly 5 digits");
-            setLoading(false);
-            return;
-          }
-        }
-
-        const response = await fetch('http://localhost:5000/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            password,
-            email,
-            fullName,
-            role,
-            ...(role === "Student" && {
-              studentId,
-              contactNumber,
-              course,
-              yearLevel
-            })
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert('Registration successful! You can now login.');
-          setIsRegistering(false);
-          setFormData({
-            email: "",
-            password: "",
-            confirmPassword: "",
-            fullName: "",
-            role: "",
-            studentId: "",
-            contactNumber: "",
-            course: "",
-            yearLevel: ""
-          });
-        } else {
-          setError(data.error || 'Registration failed');
-        }
+        // Students are handled in onLogin (modal view)
       } else {
-        // Login
-        const { email, password } = formData;
-        if (!email || !password) {
-          setError("Please fill in email and password");
-          setLoading(false);
-          return;
-        }
-
-        if (!validateEmail(email)) {
-          setError("Please enter a valid email address");
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch('http://localhost:5000/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          onLogin(data.user);
-        } else {
-          setError(data.error || 'Login failed');
-        }
+        setError(data.error || 'Login failed');
       }
     } catch (error) {
       setError('Network error. Please try again.');
@@ -198,95 +110,10 @@ export function Login({ onLogin }: LoginProps) {
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
               <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
-            <h2>{isRegistering ? "Registration" : "Login"}</h2>
+            <h2>Login</h2>
           </div>
 
           <div className="space-y-4">
-            {isRegistering && (
-              <>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Enter full name"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                  />
-                </div>
-
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={formData.role} onValueChange={(value: string) => setFormData(prev => ({ ...prev, role: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Student">Student</SelectItem>
-                      <SelectItem value="Faculty Staff">Faculty Staff</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.role === "Student" && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="studentId">Student ID Number</Label>
-                      <Input
-                        id="studentId"
-                        type="text"
-                        placeholder="Enter student ID"
-                        value={formData.studentId}
-                        onChange={(e) => setFormData(prev => ({ ...prev, studentId: e.target.value }))}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Must be exactly 5 digits (e.g., 12345)
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="contactNumber">Contact Number</Label>
-                      <Input
-                        id="contactNumber"
-                        type="tel"
-                        placeholder="Enter contact number"
-                        value={formData.contactNumber}
-                        onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="course">Course</Label>
-                      <Input
-                        id="course"
-                        type="text"
-                        placeholder="Enter course"
-                        value={formData.course}
-                        onChange={(e) => setFormData(prev => ({ ...prev, course: e.target.value }))}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="yearLevel">Year Level</Label>
-                      <Select value={formData.yearLevel} onValueChange={(value: string) => setFormData(prev => ({ ...prev, yearLevel: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select year level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1st Year</SelectItem>
-                          <SelectItem value="2">2nd Year</SelectItem>
-                          <SelectItem value="3">3rd Year</SelectItem>
-                          <SelectItem value="4">4th Year</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="email">Username or Email</Label>
               <Input
@@ -325,43 +152,7 @@ export function Login({ onLogin }: LoginProps) {
                   )}
                 </button>
               </div>
-              {isRegistering && (
-                <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters with uppercase, lowercase, and number
-                </p>
-              )}
             </div>
-
-            {isRegistering && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="flex">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                    className="flex-1"
-                  />
-                  <button
-                    type="button"
-                    className="ml-2 p-2 flex items-center justify-center"
-                    onMouseDown={() => setShowConfirmPassword(true)}
-                    onMouseUp={() => setShowConfirmPassword(false)}
-                    onMouseLeave={() => setShowConfirmPassword(false)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-
           </div>
 
           {error && (
@@ -371,33 +162,15 @@ export function Login({ onLogin }: LoginProps) {
           )}
 
           <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-            {loading ? "Processing..." : (isRegistering ? "Register" : "Login")}
+            {loading ? "Processing..." : "Login"}
           </Button>
 
           <div className="text-center">
-            <Button
-              variant="link"
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError("");
-                setFormData({
-                  email: "",
-                  password: "",
-                  confirmPassword: "",
-                  fullName: "",
-                  role: "",
-                  studentId: "",
-                  contactNumber: "",
-                  course: "",
-                  yearLevel: ""
-                });
-              }}
-              className="text-sm"
-            >
-              {isRegistering
-                ? "Already have an account? Login"
-                : "Don't have an account? Register"}
-            </Button>
+            <Link to="/register">
+              <Button variant="link" className="text-sm">
+                Don't have an account? Register
+              </Button>
+            </Link>
           </div>
         </div>
       </Card>

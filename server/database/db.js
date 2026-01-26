@@ -53,12 +53,28 @@ async function ensureDefaultData() {
       // Column might already exist, ignore error
     }
 
-    // Update role enum to include Student and Faculty Staff
+    // Update role enum to include Super Admin, Admin, Faculty Staff, Student
     try {
-      await pool.execute("ALTER TABLE users MODIFY COLUMN role ENUM('Admin','Student','Faculty Staff')");
-      console.log('Updated role enum to include Student and Faculty Staff');
+      await pool.execute("ALTER TABLE users MODIFY COLUMN role ENUM('Super Admin','Admin','Faculty Staff','Student')");
+      console.log('Updated role enum to include Super Admin, Admin, Faculty Staff, Student');
     } catch (error) {
       // Enum might already be updated, ignore error
+    }
+
+    // Add status column to users table for approval workflow
+    try {
+      await pool.execute("ALTER TABLE users ADD COLUMN status ENUM('pending','approved','rejected','suspended') DEFAULT 'approved'");
+      console.log('Added status column to users table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Update existing users to approved status
+    try {
+      await pool.execute("UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''");
+      console.log('Updated existing users to approved status');
+    } catch (error) {
+      // Might fail if no users or column issues, ignore
     }
 
     // Add contact_number column to students table if it doesn't exist
@@ -77,10 +93,24 @@ async function ensureDefaultData() {
       // Column might not exist, ignore error
     }
 
+    // Check if old admin email exists and update to new one
+    const [oldAdminRows] = await pool.execute(
+      'SELECT user_id FROM users WHERE email = ?',
+      ['admin@school.edu']
+    );
+
+    if (oldAdminRows.length > 0) {
+      await pool.execute(
+        "UPDATE users SET email = 'admin@acts.edu', role = 'Super Admin', status = 'approved' WHERE email = ?",
+        ['admin@school.edu']
+      );
+      console.log('Updated old admin email from admin@school.edu to admin@acts.edu');
+    }
+
     // Check if default admin exists
     const [adminRows] = await pool.execute(
       'SELECT user_id FROM users WHERE email = ?',
-      ['admin@school.edu']
+      ['admin@acts.edu']
     );
 
     if (adminRows.length === 0) {
@@ -91,11 +121,18 @@ async function ensureDefaultData() {
       const hash = await bcrypt.hash(defaultPassword, saltRounds);
 
       await pool.execute(
-        'INSERT INTO users (password, role, email, full_name) VALUES (?, ?, ?, ?)',
-        [hash, 'Admin', 'admin@school.edu', 'System Administrator']
+        'INSERT INTO users (password, role, email, full_name, status) VALUES (?, ?, ?, ?, ?)',
+        [hash, 'Super Admin', 'admin@acts.edu', 'System Administrator', 'approved']
       );
 
-      console.log('Default admin created: email=admin@school.edu, password=admin123');
+      console.log('Default admin created: email=admin@acts.edu, password=admin123');
+    } else {
+      // Update existing admin to Super Admin role and approved status
+      await pool.execute(
+        "UPDATE users SET role = 'Super Admin', status = 'approved' WHERE email = ?",
+        ['admin@acts.edu']
+      );
+      console.log('Updated existing admin to Super Admin role and approved status');
     }
 
     // Check if default violation exists

@@ -43,8 +43,8 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = await runQuery(
-      'INSERT INTO users (password, email, full_name, role) VALUES (?, ?, ?, ?)',
-      [hashedPassword, email, fullName, role]
+      'INSERT INTO users (password, email, full_name, role, status) VALUES (?, ?, ?, ?, ?)',
+      [hashedPassword, email, fullName, role, 'pending']
     );
 
     // If registering as student, also create student record
@@ -99,6 +99,14 @@ router.post('/login', async (req, res) => {
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (user.status !== 'approved') {
+      let message = 'Account not approved';
+      if (user.status === 'pending') message = 'Your account is pending approval.';
+      else if (user.status === 'rejected') message = 'Your account registration has been rejected.';
+      else if (user.status === 'suspended') message = 'Your account is suspended.';
+      return res.status(403).json({ error: message });
     }
 
     // Generate JWT token

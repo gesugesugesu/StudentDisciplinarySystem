@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import { Dashboard } from "./components/Dashboard";
@@ -9,10 +10,12 @@ import { AddIncidentDialog } from "./components/AddIncidentDialog";
 import { EditIncidentDialog } from "./components/EditIncidentDialog";
 import { ParentNotificationDialog } from "./components/ParentNotificationDialog";
 import { Login } from "./components/Login";
+import { Register } from "./components/Register";
 import { StudentEmailDialog } from "./components/StudentEmailDialog";
 import { StudentView } from "./components/StudentView";
+import { AdminDashboard } from "./components/AdminDashboard";
 import { students as initialStudents, incidents as initialIncidents } from "./data/mockData";
-import { Incident, CommunicationLog } from "./types";
+import { Incident, CommunicationLog, UserRole } from "./types";
 import { Plus, LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
@@ -31,6 +34,7 @@ export default function App() {
   
   // Authentication state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
@@ -48,6 +52,7 @@ export default function App() {
       }
     } else {
       // For admin/faculty staff, show admin dashboard
+      setCurrentUserRole(user.role);
       setIsAdminLoggedIn(true);
       toast.success("Logged in successfully");
     }
@@ -55,6 +60,7 @@ export default function App() {
   
   const handleAdminLogout = () => {
     setIsAdminLoggedIn(false);
+    setCurrentUserRole(null);
     setSelectedStudentId(null);
     setActiveTab("dashboard");
     toast.success("Logged out successfully");
@@ -169,12 +175,16 @@ export default function App() {
     );
   }
   
-  // Show admin login if not logged in
+  // Show auth routes if not logged in
   if (!isAdminLoggedIn) {
     return (
       <>
         <Toaster />
-        <Login onLogin={handleAdminLogin} />
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleAdminLogin} />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
         <StudentEmailDialog
           open={isStudentEmailDialogOpen}
           onOpenChange={setIsStudentEmailDialogOpen}
@@ -209,6 +219,11 @@ export default function App() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Incident
               </Button>
+              {(currentUserRole === 'Admin' || currentUserRole === 'Super Admin') && (
+                <Link to="/admin">
+                  <Button variant="outline">Admin Dashboard</Button>
+                </Link>
+              )}
               <Button variant="outline" onClick={handleAdminLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -219,48 +234,55 @@ export default function App() {
       </header>
       
       <main className="container mx-auto px-4 py-8">
-        {selectedStudent ? (
-          <StudentProfile
-            student={selectedStudent}
-            incidents={incidents}
-            onBack={handleBackToList}
-            onAddIncident={() => setIsAddDialogOpen(true)}
-            onEditIncident={handleEditIncident}
-            onDeleteIncident={handleDeleteIncident}
-            onNotifyParent={handleNotifyParent}
-          />
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-6">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="students">Students</TabsTrigger>
-              <TabsTrigger value="incidents">All Incidents</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="dashboard">
-              <Dashboard incidents={incidents} students={students} />
-            </TabsContent>
-            
-            <TabsContent value="students">
-              <StudentList 
-                students={students} 
+        <Routes>
+          <Route path="/" element={
+            selectedStudent ? (
+              <StudentProfile
+                student={selectedStudent}
                 incidents={incidents}
-                onSelectStudent={handleSelectStudent}
-              />
-            </TabsContent>
-            
-            <TabsContent value="incidents">
-              <AllIncidents 
-                incidents={incidents} 
-                students={students}
-                onSelectStudent={handleSelectStudent}
+                onBack={handleBackToList}
+                onAddIncident={() => setIsAddDialogOpen(true)}
                 onEditIncident={handleEditIncident}
                 onDeleteIncident={handleDeleteIncident}
                 onNotifyParent={handleNotifyParent}
               />
-            </TabsContent>
-          </Tabs>
-        )}
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-6">
+                  <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                  <TabsTrigger value="students">Students</TabsTrigger>
+                  <TabsTrigger value="incidents">All Incidents</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="dashboard">
+                  <Dashboard incidents={incidents} students={students} />
+                </TabsContent>
+
+                <TabsContent value="students">
+                  <StudentList
+                    students={students}
+                    incidents={incidents}
+                    onSelectStudent={handleSelectStudent}
+                  />
+                </TabsContent>
+
+                <TabsContent value="incidents">
+                  <AllIncidents
+                    incidents={incidents}
+                    students={students}
+                    onSelectStudent={handleSelectStudent}
+                    onEditIncident={handleEditIncident}
+                    onDeleteIncident={handleDeleteIncident}
+                    onNotifyParent={handleNotifyParent}
+                  />
+                </TabsContent>
+              </Tabs>
+            )
+          } />
+          <Route path="/admin" element={
+            currentUserRole === 'Super Admin' || currentUserRole === 'Admin' ? <AdminDashboard /> : <Navigate to="/" replace />
+          } />
+        </Routes>
       </main>
       
       <AddIncidentDialog
