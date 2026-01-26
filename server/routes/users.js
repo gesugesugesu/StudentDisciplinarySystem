@@ -34,7 +34,7 @@ router.get('/', verifyToken, requireAdmin, async (req, res) => {
 router.get('/pending', verifyToken, requireAdmin, async (req, res) => {
   try {
     const pendingUsers = await getAllRows(
-      'SELECT user_id, email, full_name, role, created_at FROM users WHERE status = ? ORDER BY created_at DESC',
+      'SELECT user_id, email, full_name, role, status, created_at FROM users WHERE status = ? ORDER BY created_at DESC',
       ['pending']
     );
     res.json(pendingUsers);
