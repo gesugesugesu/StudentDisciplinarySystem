@@ -8,7 +8,7 @@ const router = express.Router();
 const requireAdmin = async (req, res, next) => {
   try {
     const user = await getRow('SELECT role FROM users WHERE user_id = ?', [req.user.id]);
-    if (!user || user.role !== 'Admin') {
+    if (!user || (user.role !== 'Admin' && user.role !== 'Super Admin')) {
       return res.status(403).json({ error: 'Access denied. Admin role required.' });
     }
     next();

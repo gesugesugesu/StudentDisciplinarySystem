@@ -16,7 +16,7 @@ export function AdminDashboard() {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = 'http://localhost:3001/api';
+  const API_BASE = 'http://localhost:5000/api';
 
   useEffect(() => {
     fetchUsers();
@@ -296,7 +296,7 @@ export function AdminDashboard() {
                     <TableCell>
                       <Select
                         value={user.role}
-                        onValueChange={(value) => handleChangeRole(user.id, value as UserRole)}
+                        onValueChange={(value: string) => handleChangeRole(user.id, value as UserRole)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
