@@ -15,7 +15,7 @@ import { StudentEmailDialog } from "./components/StudentEmailDialog";
 import { StudentView } from "./components/StudentView";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { students as initialStudents, incidents as initialIncidents } from "./data/mockData";
-import { Incident, CommunicationLog, UserRole } from "./types";
+import { Incident, CommunicationLog, UserRole, Student } from "./types";
 import { Plus, LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
@@ -38,12 +38,31 @@ export default function App() {
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
+  const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   
   const handleAdminLogin = (user: any) => {
     if (user.role === 'Student') {
       // For students, find their student record and show student view
-      const student = students.find(s => s.email.toLowerCase() === user.email.toLowerCase());
+      let student = students.find(s => s.email.toLowerCase() === user.email.toLowerCase());
+
+      // If not found in mock data, create a temporary student object from user data
+      if (!student) {
+        // Fetch student data from API or create from user info
+        // For now, create a basic student object
+        student = {
+          id: `student-${user.id}`,
+          name: user.fullName,
+          email: user.email,
+          grade: 1, // Default
+          class: 'Unknown', // Default
+          parentName: undefined,
+          parentEmail: undefined,
+          parentPhone: undefined
+        };
+      }
+
       if (student) {
+        setCurrentStudent(student);
         setCurrentStudentId(student.id);
         setIsStudentViewOpen(true);
         toast.success(`Welcome, ${student.name}`);
@@ -69,6 +88,7 @@ export default function App() {
   const handleStudentEmailSubmit = (email: string) => {
     const student = students.find(s => s.email.toLowerCase() === email.toLowerCase());
     if (student) {
+      setCurrentStudent(student);
       setCurrentStudentId(student.id);
       setIsStudentViewOpen(true);
       setIsStudentEmailDialogOpen(false);
@@ -81,6 +101,7 @@ export default function App() {
   const handleStudentLogout = () => {
     setIsStudentViewOpen(false);
     setCurrentStudentId(null);
+    setCurrentStudent(null);
     toast.success("Returned to main page");
   };
   
@@ -156,19 +177,13 @@ export default function App() {
     : null;
   
   // Show student view if student is viewing their records
-  if (isStudentViewOpen && currentStudentId) {
-    const student = students.find(s => s.id === currentStudentId);
-    if (!student) {
-      handleStudentLogout();
-      return null;
-    }
-    
+  if (isStudentViewOpen && currentStudent) {
     return (
       <>
         <Toaster />
-        <StudentView 
-          student={student} 
-          incidents={incidents} 
+        <StudentView
+          student={currentStudent}
+          incidents={incidents}
           onLogout={handleStudentLogout}
         />
       </>
