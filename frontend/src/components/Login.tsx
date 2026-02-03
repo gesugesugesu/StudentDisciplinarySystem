@@ -101,8 +101,7 @@ export function Login({ onLogin }: LoginProps) {
             alt="ACTS Computer College"
             className="h-32 w-32 mb-4"
           />
-          <h1 className="text-center mb-2">D-Manage: Automated Student Disciplinary Management</h1>
-          <p className="text-muted-foreground text-center">ACTS Computer College</p>
+          <h1 className="text-center mb-2">D-Manage: Computerized Student Disciplinary Management</h1>
         </div>
 
         <div className="space-y-6">

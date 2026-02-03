@@ -14,7 +14,7 @@ import { Register } from "./components/Register";
 import { StudentEmailDialog } from "./components/StudentEmailDialog";
 import { StudentView } from "./components/StudentView";
 import { AdminDashboard } from "./components/AdminDashboard";
-import { students as initialStudents, incidents as initialIncidents } from "./data/mockData";
+// Removed mock data import
 import { Incident, CommunicationLog, UserRole, Student } from "./types";
 import { Plus, LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
@@ -23,15 +23,15 @@ import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 
 export default function App() {
-  const [students] = useState(initialStudents);
-  const [incidents, setIncidents] = useState(initialIncidents);
+  const [dbStudents, setDbStudents] = useState<Student[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
-  
+
   // Authentication state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
@@ -39,11 +39,26 @@ export default function App() {
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
-  
+
+  const fetchStudents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/students', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDbStudents(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+    }
+  };
+
   const handleAdminLogin = (user: any) => {
     if (user.role === 'Student') {
       // For students, find their student record and show student view
-      let student = students.find(s => s.email.toLowerCase() === user.email.toLowerCase());
+      let student = dbStudents.find((s: Student) => s.email.toLowerCase() === user.email.toLowerCase());
 
       // If not found in mock data, create a temporary student object from user data
       if (!student) {
@@ -73,6 +88,7 @@ export default function App() {
       // For admin/faculty staff, show admin dashboard
       setCurrentUserRole(user.role);
       setIsAdminLoggedIn(true);
+      fetchStudents(); // Fetch database students for all admin users
       toast.success("Logged in successfully");
     }
   };
@@ -86,7 +102,7 @@ export default function App() {
   };
   
   const handleStudentEmailSubmit = (email: string) => {
-    const student = students.find(s => s.email.toLowerCase() === email.toLowerCase());
+    const student = dbStudents.find((s: Student) => s.email.toLowerCase() === email.toLowerCase());
     if (student) {
       setCurrentStudent(student);
       setCurrentStudentId(student.id);
@@ -173,7 +189,7 @@ export default function App() {
   };
   
   const selectedStudent = selectedStudentId 
-    ? students.find(s => s.id === selectedStudentId) 
+    ? dbStudents.find((s: Student) => s.id === selectedStudentId)
     : null;
   
   // Show student view if student is viewing their records
@@ -224,8 +240,7 @@ export default function App() {
                 className="h-12 w-12"
               />
               <div>
-                <h1>D-Manage: Automated Student Disciplinary Management</h1>
-                <p className="text-muted-foreground">ACTS Computer College</p>
+                <h1>D-Manage: Computerized Student Disciplinary Management</h1>
               </div>
             </div>
             
@@ -270,12 +285,12 @@ export default function App() {
                 </TabsList>
 
                 <TabsContent value="dashboard">
-                  <Dashboard incidents={incidents} students={students} />
+                  <Dashboard incidents={incidents} students={dbStudents} />
                 </TabsContent>
 
                 <TabsContent value="students">
                   <StudentList
-                    students={students}
+                    students={dbStudents}
                     incidents={incidents}
                     onSelectStudent={handleSelectStudent}
                   />
@@ -284,7 +299,7 @@ export default function App() {
                 <TabsContent value="incidents">
                   <AllIncidents
                     incidents={incidents}
-                    students={students}
+                    students={dbStudents}
                     onSelectStudent={handleSelectStudent}
                     onEditIncident={handleEditIncident}
                     onDeleteIncident={handleDeleteIncident}
@@ -304,7 +319,7 @@ export default function App() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onAddIncident={handleAddIncident}
-        students={students}
+        students={dbStudents}
         preselectedStudentId={selectedStudentId || undefined}
       />
       
@@ -322,7 +337,7 @@ export default function App() {
           open={isNotifyDialogOpen}
           onOpenChange={setIsNotifyDialogOpen}
           onAddCommunication={handleAddCommunication}
-          student={students.find(s => s.id === selectedIncident.studentId)!}
+          student={dbStudents.find((s: Student) => s.id === selectedIncident.studentId)!}
           incident={selectedIncident}
         />
       )}

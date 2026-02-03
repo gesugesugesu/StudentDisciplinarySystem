@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { User, UserRole, UserStatus } from "../types";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, Shield } from "lucide-react";
+import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, Shield, RefreshCw } from "lucide-react";
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
@@ -22,6 +22,11 @@ export function AdminDashboard() {
     fetchUsers();
     fetchPendingUsers();
   }, []);
+
+  const refreshData = () => {
+    fetchUsers();
+    fetchPendingUsers();
+  };
 
   const fetchUsers = async () => {
     try {
@@ -42,6 +47,8 @@ export function AdminDashboard() {
       }
     } catch (error) {
       toast.error('Failed to fetch users');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -212,6 +219,10 @@ export function AdminDashboard() {
           <h2 className="text-2xl font-bold">Admin Dashboard</h2>
           <p className="text-muted-foreground">Manage users and view statistics</p>
         </div>
+        <Button onClick={refreshData} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       <Tabs defaultValue="pending" className="space-y-4">
@@ -248,22 +259,46 @@ export function AdminDashboard() {
                       <TableCell>{new Date(user.createdAt || '').toLocaleDateString()}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
+                          <button
                             onClick={() => handleApproveUser(user.id)}
-                            className="bg-green-600 hover:bg-green-700"
+                            style={{
+                              padding: '4px 12px',
+                              fontSize: '14px',
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                              border: '1px solid #15803d',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <CheckCircle className="h-4 w-4" />
                             Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
+                          </button>
+                          <button
                             onClick={() => handleRejectUser(user.id)}
+                            style={{
+                              padding: '4px 12px',
+                              fontSize: '14px',
+                              backgroundColor: '#dc2626',
+                              color: 'white',
+                              border: '1px solid #b91c1c',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#b91c1c'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
+                            <XCircle className="h-4 w-4" />
                             Reject
-                          </Button>
+                          </button>
                         </div>
                       </TableCell>
                     </TableRow>

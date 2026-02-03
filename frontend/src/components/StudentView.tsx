@@ -48,7 +48,6 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
             />
             <div>
               <h1 className="text-lg">D-Manage: Student Portal</h1>
-              <p className="text-sm text-muted-foreground">ACTS Computer College</p>
             </div>
           </div>
           <Button variant="outline" onClick={onLogout}>
