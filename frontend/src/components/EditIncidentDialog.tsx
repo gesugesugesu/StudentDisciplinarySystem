@@ -16,16 +16,41 @@ interface EditIncidentDialogProps {
 
 const incidentTypes: IncidentType[] = [
   "Tardiness",
-  "Misconduct",
-  "Academic Dishonesty",
-  "Bullying",
+  "Loitering",
+  "Incomplete Uniform",
+  "Improper Uniform",
+  "Wearing Earrings (Male)",
+  "Excessive Jewelry",
+  "Colored Hair",
+  "Tattoos",
+  "Body Piercing",
+  "Chewing Gum/Eating in Class",
+  "Using Mobile Phone Without Permission",
+  "Sleeping in Class",
+  "Not Wearing ID",
+  "Not Bringing School Materials",
+  "Late Submission of Assignments",
+  "Improper Haircut",
+  "Cutting Classes",
+  "Leaving School Without Permission",
+  "Disrespect to Teachers/Staff/Students",
+  "Cheating in Examinations/Quizzes",
+  "Plagiarism",
+  "Forgery",
   "Vandalism",
-  "Disruption",
-  "Dress Code",
-  "Other",
+  "Bullying",
+  "Physical Assault",
+  "Possession of Dangerous Weapons",
+  "Possession/Use of Illegal Drugs",
+  "Possession/Use of Alcoholic Beverages",
+  "Smoking Within School Premises",
+  "Theft",
+  "Gambling",
+  "Sexual Harassment",
+  "Other"
 ];
 
-const severities: Severity[] = ["Minor", "Moderate", "Severe"];
+const severities: Severity[] = ["Minor", "Major"];
 const statuses: Status[] = ["Open", "Under Review", "Resolved"];
 
 export function EditIncidentDialog({ 

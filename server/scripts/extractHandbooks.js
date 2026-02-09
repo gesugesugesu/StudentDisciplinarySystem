@@ -7,17 +7,17 @@ const pdfPoppler = require('pdf-poppler');
 const handbookFiles = [
   {
     name: 'College Handbook',
-    path: '../frontend/src/assets/College-HANDBOOK.pdf',
+    path: path.join(__dirname, '../../frontend/src/assets/College-HANDBOOK.pdf'),
     type: 'College'
   },
   {
     name: 'Grade 12 Handbook',
-    path: '../frontend/src/assets/Grade-12-HANDBOOK.pdf',
+    path: path.join(__dirname, '../../frontend/src/assets/Grade-12-HANDBOOK.pdf'),
     type: 'Grade-12'
   },
   {
     name: 'SHS Handbook',
-    path: '../frontend/src/assets/shs_handbook.pdf',
+    path: path.join(__dirname, '../../frontend/src/assets/shs_handbook.pdf'),
     type: 'SHS'
   }
 ];

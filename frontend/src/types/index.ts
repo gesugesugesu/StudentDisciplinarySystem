@@ -1,14 +1,39 @@
-export type IncidentType = 
-  | "Tardiness" 
-  | "Misconduct" 
-  | "Academic Dishonesty" 
-  | "Bullying" 
-  | "Vandalism" 
-  | "Disruption" 
-  | "Dress Code" 
+export type IncidentType =
+  | "Tardiness"
+  | "Loitering"
+  | "Incomplete Uniform"
+  | "Improper Uniform"
+  | "Wearing Earrings (Male)"
+  | "Excessive Jewelry"
+  | "Colored Hair"
+  | "Tattoos"
+  | "Body Piercing"
+  | "Chewing Gum/Eating in Class"
+  | "Using Mobile Phone Without Permission"
+  | "Sleeping in Class"
+  | "Not Wearing ID"
+  | "Not Bringing School Materials"
+  | "Late Submission of Assignments"
+  | "Improper Haircut"
+  | "Cutting Classes"
+  | "Leaving School Without Permission"
+  | "Disrespect to Teachers/Staff/Students"
+  | "Cheating in Examinations/Quizzes"
+  | "Plagiarism"
+  | "Forgery"
+  | "Vandalism"
+  | "Bullying"
+  | "Physical Assault"
+  | "Possession of Dangerous Weapons"
+  | "Possession/Use of Illegal Drugs"
+  | "Possession/Use of Alcoholic Beverages"
+  | "Smoking Within School Premises"
+  | "Theft"
+  | "Gambling"
+  | "Sexual Harassment"
   | "Other";
 
-export type Severity = "Minor" | "Moderate" | "Severe";
+export type Severity = "Minor" | "Major";
 export type Status = "Open" | "Resolved" | "Under Review";
 
 export interface Student {

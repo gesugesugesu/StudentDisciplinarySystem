@@ -313,7 +313,7 @@ export default function App() {
             )
           } />
           <Route path="/admin" element={
-            currentUserRole === 'Super Admin' || currentUserRole === 'Discipline Officer' ? <AdminDashboard /> : <Navigate to="/" replace />
+            currentUserRole === 'Super Admin' ? <AdminDashboard /> : <Navigate to="/" replace />
           } />
         </Routes>
       </main>

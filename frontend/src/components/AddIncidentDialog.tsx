@@ -24,7 +24,7 @@ export function AddIncidentDialog({
 }: AddIncidentDialogProps) {
   const [formData, setFormData] = useState({
     studentId: preselectedStudentId || "",
-    type: "Misconduct" as IncidentType,
+    type: "Tardiness" as IncidentType,
     severity: "Minor" as Severity,
     date: new Date().toISOString().split('T')[0],
     description: "",
@@ -39,7 +39,7 @@ export function AddIncidentDialog({
     onOpenChange(false);
     setFormData({
       studentId: preselectedStudentId || "",
-      type: "Misconduct",
+      type: "Tardiness",
       severity: "Minor",
       date: new Date().toISOString().split('T')[0],
       description: "",
@@ -51,12 +51,37 @@ export function AddIncidentDialog({
   
   const incidentTypes: IncidentType[] = [
     "Tardiness",
-    "Misconduct",
-    "Academic Dishonesty",
-    "Bullying",
+    "Loitering",
+    "Incomplete Uniform",
+    "Improper Uniform",
+    "Wearing Earrings (Male)",
+    "Excessive Jewelry",
+    "Colored Hair",
+    "Tattoos",
+    "Body Piercing",
+    "Chewing Gum/Eating in Class",
+    "Using Mobile Phone Without Permission",
+    "Sleeping in Class",
+    "Not Wearing ID",
+    "Not Bringing School Materials",
+    "Late Submission of Assignments",
+    "Improper Haircut",
+    "Cutting Classes",
+    "Leaving School Without Permission",
+    "Disrespect to Teachers/Staff/Students",
+    "Cheating in Examinations/Quizzes",
+    "Plagiarism",
+    "Forgery",
     "Vandalism",
-    "Disruption",
-    "Dress Code",
+    "Bullying",
+    "Physical Assault",
+    "Possession of Dangerous Weapons",
+    "Possession/Use of Illegal Drugs",
+    "Possession/Use of Alcoholic Beverages",
+    "Smoking Within School Premises",
+    "Theft",
+    "Gambling",
+    "Sexual Harassment",
     "Other"
   ];
   
@@ -119,8 +144,7 @@ export function AddIncidentDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Minor">Minor</SelectItem>
-                  <SelectItem value="Moderate">Moderate</SelectItem>
-                  <SelectItem value="Severe">Severe</SelectItem>
+                  <SelectItem value="Major">Major</SelectItem>
                 </SelectContent>
               </Select>
             </div>
