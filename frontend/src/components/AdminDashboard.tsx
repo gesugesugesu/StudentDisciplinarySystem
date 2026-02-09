@@ -337,9 +337,9 @@ export function AdminDashboard() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Faculty Staff">Faculty Staff</SelectItem>
                           <SelectItem value="Super Admin">Super Admin</SelectItem>
+                          <SelectItem value="Discipline Officer">Discipline Officer</SelectItem>
+                          <SelectItem value="Student">Student</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

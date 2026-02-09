@@ -7,10 +7,10 @@ const router = express.Router();
 // Get all audit logs
 router.get('/', verifyToken, async (req, res) => {
   try {
-    // Check if user is admin
+    // Check if user is Super Admin or Discipline Officer
     const user = await getRow('SELECT role FROM users WHERE user_id = ?', [req.user.id]);
-    if (!user || user.role !== 'Admin') {
-      return res.status(403).json({ error: 'Access denied. Admin role required.' });
+    if (!user || (user.role !== 'Super Admin' && user.role !== 'Discipline Officer')) {
+      return res.status(403).json({ error: 'Access denied. Super Admin or Discipline Officer role required.' });
     }
 
     const logs = await getAllRows(`
@@ -32,9 +32,9 @@ router.get('/', verifyToken, async (req, res) => {
 // Get audit logs for a specific user
 router.get('/user/:userId', verifyToken, async (req, res) => {
   try {
-    // Check if user is admin or the user themselves
+    // Check if user is Super Admin, Discipline Officer, or user themselves
     const currentUser = await getRow('SELECT role FROM users WHERE user_id = ?', [req.user.id]);
-    if (!currentUser || (currentUser.role !== 'Admin' && req.user.id != req.params.userId)) {
+    if (!currentUser || (currentUser.role !== 'Super Admin' && currentUser.role !== 'Discipline Officer' && req.user.id != req.params.userId)) {
       return res.status(403).json({ error: 'Access denied.' });
     }
 
@@ -89,10 +89,10 @@ router.post('/', verifyToken, async (req, res) => {
 // Get audit statistics
 router.get('/stats/summary', verifyToken, async (req, res) => {
   try {
-    // Check if user is admin
+    // Check if user is Super Admin or Discipline Officer
     const user = await getRow('SELECT role FROM users WHERE user_id = ?', [req.user.id]);
-    if (!user || user.role !== 'Admin') {
-      return res.status(403).json({ error: 'Access denied. Admin role required.' });
+    if (!user || (user.role !== 'Super Admin' && user.role !== 'Discipline Officer')) {
+      return res.status(403).json({ error: 'Access denied. Super Admin or Discipline Officer role required.' });
     }
 
     // Get total logs count

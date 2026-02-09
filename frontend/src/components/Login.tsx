@@ -75,10 +75,8 @@ export function Login({ onLogin }: LoginProps) {
         localStorage.setItem('user', JSON.stringify(data.user));
         onLogin(data.user);
         // Navigate based on role
-        if (data.user.role === 'Admin' || data.user.role === 'Super Admin') {
+        if (data.user.role === 'Super Admin' || data.user.role === 'Discipline Officer') {
           navigate('/admin');
-        } else if (data.user.role === 'Faculty Staff') {
-          navigate('/');
         }
         // Students are handled in onLogin (modal view)
       } else {

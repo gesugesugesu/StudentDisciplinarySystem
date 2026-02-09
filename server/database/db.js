@@ -5,7 +5,7 @@ const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'student_disciplinary_db',
+  database: process.env.DB_NAME || 'dmanage',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -29,7 +29,7 @@ async function initializeDatabase() {
     console.error('Error connecting to MySQL database:', error.message);
     console.error('Please ensure:');
     console.error('1. XAMPP MySQL server is running');
-    console.error('2. Database "student_disciplinary_db" exists');
+    console.error('2. Database "dmanage" exists');
     console.error('3. Database credentials are correct in .env file');
     process.exit(1);
   }
@@ -53,10 +53,10 @@ async function ensureDefaultData() {
       // Column might already exist, ignore error
     }
 
-    // Update role enum to include Super Admin, Admin, Faculty Staff, Student
+    // Update role enum to include only Super Admin, Discipline Officer, Student
     try {
-      await pool.execute("ALTER TABLE users MODIFY COLUMN role ENUM('Super Admin','Admin','Faculty Staff','Student')");
-      console.log('Updated role enum to include Super Admin, Admin, Faculty Staff, Student');
+      await pool.execute("ALTER TABLE users MODIFY COLUMN role ENUM('Super Admin','Discipline Officer','Student')");
+      console.log('Updated role enum to include Super Admin, Discipline Officer, Student');
     } catch (error) {
       // Enum might already be updated, ignore error
     }
@@ -75,6 +75,17 @@ async function ensureDefaultData() {
       console.log('Updated existing users to approved status');
     } catch (error) {
       // Might fail if no users or column issues, ignore
+    }
+
+    // Update existing users with old roles to new roles
+    try {
+      // Convert Admin to Discipline Officer
+      await pool.execute("UPDATE users SET role = 'Discipline Officer' WHERE role = 'Admin'");
+      // Convert Faculty Staff to Discipline Officer
+      await pool.execute("UPDATE users SET role = 'Discipline Officer' WHERE role = 'Faculty Staff'");
+      console.log('Updated existing users with old roles to new roles');
+    } catch (error) {
+      // Might fail if no users, ignore
     }
 
     // Add contact_number column to students table if it doesn't exist
@@ -133,34 +144,6 @@ async function ensureDefaultData() {
         ['admin@acts.edu']
       );
       console.log('Updated existing admin to Super Admin role and approved status');
-    }
-
-    // Check if default faculty exists
-    const [facultyRows] = await pool.execute(
-      'SELECT user_id FROM users WHERE email = ?',
-      ['faculty@acts.edu']
-    );
-
-    if (facultyRows.length === 0) {
-      const bcrypt = require('bcryptjs');
-      const defaultPassword = 'faculty123';
-      const saltRounds = 10;
-
-      const hash = await bcrypt.hash(defaultPassword, saltRounds);
-
-      await pool.execute(
-        'INSERT INTO users (password, role, email, full_name, status) VALUES (?, ?, ?, ?, ?)',
-        [hash, 'Faculty Staff', 'faculty@acts.edu', 'Faculty Member', 'approved']
-      );
-
-      console.log('Default faculty created: email=faculty@acts.edu, password=faculty123');
-    } else {
-      // Update existing faculty to Faculty Staff role and approved status
-      await pool.execute(
-        "UPDATE users SET role = 'Faculty Staff', status = 'approved' WHERE email = ?",
-        ['faculty@acts.edu']
-      );
-      console.log('Updated existing faculty to Faculty Staff role and approved status');
     }
 
     // Check if default violation exists

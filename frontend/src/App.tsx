@@ -14,9 +14,10 @@ import { Register } from "./components/Register";
 import { StudentEmailDialog } from "./components/StudentEmailDialog";
 import { StudentView } from "./components/StudentView";
 import { AdminDashboard } from "./components/AdminDashboard";
+import { AddUsersDialog } from "./components/AddUsersDialog";
 // Removed mock data import
 import { Incident, CommunicationLog, UserRole, Student } from "./types";
-import { Plus, LogOut } from "lucide-react";
+import { Plus, LogOut, UserPlus } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
@@ -29,6 +30,7 @@ export default function App() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
+  const [isAddUsersDialogOpen, setIsAddUsersDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -240,7 +242,7 @@ export default function App() {
                 className="h-12 w-12"
               />
               <div>
-                <h1>D-Manage: Computerized Student Disciplinary Management</h1>
+                <h1 className="text-2xl font-bold">D-Manage: Computerized Student Disciplinary Management</h1>
               </div>
             </div>
             
@@ -249,10 +251,11 @@ export default function App() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Incident
               </Button>
-              {(currentUserRole === 'Admin' || currentUserRole === 'Super Admin') && (
-                <Link to="/admin">
-                  <Button variant="outline">Admin Dashboard</Button>
-                </Link>
+              {currentUserRole === 'Super Admin' && (
+                <Button variant="outline" onClick={() => setIsAddUsersDialogOpen(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Users
+                </Button>
               )}
               <Button variant="outline" onClick={handleAdminLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -310,7 +313,7 @@ export default function App() {
             )
           } />
           <Route path="/admin" element={
-            currentUserRole === 'Super Admin' || currentUserRole === 'Admin' ? <AdminDashboard /> : <Navigate to="/" replace />
+            currentUserRole === 'Super Admin' || currentUserRole === 'Discipline Officer' ? <AdminDashboard /> : <Navigate to="/" replace />
           } />
         </Routes>
       </main>
@@ -341,6 +344,14 @@ export default function App() {
           incident={selectedIncident}
         />
       )}
+      
+      <AddUsersDialog
+        open={isAddUsersDialogOpen}
+        onOpenChange={setIsAddUsersDialogOpen}
+        onUserAdded={() => {
+          // Refresh data if needed
+        }}
+      />
     </div>
   );
 }

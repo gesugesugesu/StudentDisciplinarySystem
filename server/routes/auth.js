@@ -23,10 +23,10 @@ router.post('/register', async (req, res) => {
     }
 
     // Validate role
-    const validRoles = ['Faculty Staff', 'Student'];
+    const validRoles = ['Discipline Officer', 'Student'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
-        error: 'Invalid role. Must be Faculty Staff or Student'
+        error: 'Invalid role. Must be Discipline Officer or Student'
       });
     }
 
@@ -150,13 +150,13 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// Get all users (admin only)
+// Get all users (Super Admin and Discipline Officer only)
 router.get('/users', verifyToken, async (req, res) => {
   try {
-    // Check if user is admin
+    // Check if user is Super Admin or Discipline Officer
     const user = await getRow('SELECT role FROM users WHERE user_id = ?', [req.user.id]);
-    if (!user || user.role !== 'Admin') {
-      return res.status(403).json({ error: 'Access denied. Admin role required.' });
+    if (!user || (user.role !== 'Super Admin' && user.role !== 'Discipline Officer')) {
+      return res.status(403).json({ error: 'Access denied. Super Admin or Discipline Officer role required.' });
     }
 
     const users = await getAllRows(

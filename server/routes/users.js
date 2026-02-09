@@ -8,8 +8,8 @@ const router = express.Router();
 const requireAdmin = async (req, res, next) => {
   try {
     const user = await getRow('SELECT role FROM users WHERE user_id = ?', [req.user.id]);
-    if (!user || (user.role !== 'Admin' && user.role !== 'Super Admin')) {
-      return res.status(403).json({ error: 'Access denied. Admin role required.' });
+    if (!user || (user.role !== 'Super Admin' && user.role !== 'Discipline Officer')) {
+      return res.status(403).json({ error: 'Access denied. Super Admin or Discipline Officer role required.' });
     }
     next();
   } catch (error) {
@@ -48,9 +48,9 @@ router.get('/pending', verifyToken, requireAdmin, async (req, res) => {
 router.put('/:id/role', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { role } = req.body;
-    const validRoles = ['Admin', 'Student', 'Faculty Staff', 'Super Admin'];
+    const validRoles = ['Super Admin', 'Discipline Officer', 'Student'];
     if (!validRoles.includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be Admin, Student, or Faculty Staff' });
+      return res.status(400).json({ error: 'Invalid role. Must be Super Admin, Discipline Officer, or Student' });
     }
 
     const result = await runQuery('UPDATE users SET role = ? WHERE user_id = ?', [role, req.params.id]);
