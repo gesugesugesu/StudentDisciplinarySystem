@@ -19,6 +19,7 @@ export function Register() {
     role: "" as UserRole | "",
     contactNumber: "",
     course: "",
+    educationLevel: "",
     yearLevel: "",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +45,7 @@ export function Register() {
     setSuccess("");
     setLoading(true);
 
-    const { email, password, confirmPassword, fullName, role, contactNumber, course, yearLevel } = formData;
+    const { email, password, confirmPassword, fullName, role, contactNumber, course, educationLevel, yearLevel } = formData;
 
     // Basic required fields validation
     if (!email || !password || !confirmPassword || !fullName || !role) {
@@ -54,8 +55,15 @@ export function Register() {
     }
 
     // Additional validation for students
-    if (role === 'Student' && (!contactNumber || !course || !yearLevel)) {
-      setError("Contact number, course, and year level are required for students");
+    if (role === 'Student' && (!contactNumber || !educationLevel || !yearLevel)) {
+      setError("Contact number, education level, and year level are required for students");
+      setLoading(false);
+      return;
+    }
+
+    // Course is only required for College students
+    if (role === 'Student' && educationLevel === 'College' && !course) {
+      setError("Course is required for college students");
       setLoading(false);
       return;
     }
@@ -94,8 +102,11 @@ export function Register() {
           role,
           ...(role === 'Student' && {
             contactNumber,
-            course,
+            educationLevel,
             yearLevel,
+            ...(educationLevel === 'College' && {
+              course,
+            }),
           }),
         }),
       });
@@ -112,6 +123,7 @@ export function Register() {
           role: "",
           contactNumber: "",
           course: "",
+          educationLevel: "",
           yearLevel: "",
         });
       } else {
@@ -194,29 +206,59 @@ export function Register() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="course">Course</Label>
-                <Input
-                  id="course"
-                  type="text"
-                  value={formData.course}
-                  onChange={(e) => handleInputChange('course', e.target.value)}
-                  placeholder="Enter your course"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="yearLevel">Year Level</Label>
-                <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                <Label htmlFor="educationLevel">Education Level</Label>
+                <Select value={formData.educationLevel} onValueChange={(value: string) => handleInputChange('educationLevel', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select your year level" />
+                    <SelectValue placeholder="Select your education level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1st Year</SelectItem>
-                    <SelectItem value="2">2nd Year</SelectItem>
-                    <SelectItem value="3">3rd Year</SelectItem>
-                    <SelectItem value="4">4th Year</SelectItem>
+                    <SelectItem value="Senior High School">Senior High School</SelectItem>
+                    <SelectItem value="College">College</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {formData.educationLevel === 'College' && (
+                <div className="space-y-2">
+                  <Label htmlFor="course">Course</Label>
+                  <Input
+                    id="course"
+                    type="text"
+                    value={formData.course}
+                    onChange={(e) => handleInputChange('course', e.target.value)}
+                    placeholder="Enter your course"
+                  />
+                </div>
+              )}
+              {formData.educationLevel === 'Senior High School' && (
+                <div className="space-y-2">
+                  <Label htmlFor="yearLevel">Grade Level</Label>
+                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your grade level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="11">Grade 11</SelectItem>
+                      <SelectItem value="12">Grade 12</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formData.educationLevel === 'College' && (
+                <div className="space-y-2">
+                  <Label htmlFor="yearLevel">Year Level</Label>
+                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your year level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1st Year</SelectItem>
+                      <SelectItem value="2">2nd Year</SelectItem>
+                      <SelectItem value="3">3rd Year</SelectItem>
+                      <SelectItem value="4">4th Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </>
           )}
           <div className="space-y-2">
