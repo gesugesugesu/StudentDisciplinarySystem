@@ -84,6 +84,54 @@ export function AddIncidentDialog({
     "Sexual Harassment",
     "Other"
   ];
+
+  // Mapping of incident types to their severity levels
+  const incidentSeverityMap: Record<IncidentType, Severity> = {
+    "Tardiness": "Minor",
+    "Loitering": "Minor",
+    "Incomplete Uniform": "Minor",
+    "Improper Uniform": "Minor",
+    "Wearing Earrings (Male)": "Minor",
+    "Excessive Jewelry": "Minor",
+    "Colored Hair": "Minor",
+    "Tattoos": "Minor",
+    "Body Piercing": "Minor",
+    "Chewing Gum/Eating in Class": "Minor",
+    "Using Mobile Phone Without Permission": "Minor",
+    "Sleeping in Class": "Minor",
+    "Not Wearing ID": "Minor",
+    "Not Bringing School Materials": "Minor",
+    "Late Submission of Assignments": "Minor",
+    "Improper Haircut": "Minor",
+    "Cutting Classes": "Major",
+    "Leaving School Without Permission": "Major",
+    "Disrespect to Teachers/Staff/Students": "Major",
+    "Cheating in Examinations/Quizzes": "Major",
+    "Plagiarism": "Major",
+    "Forgery": "Major",
+    "Vandalism": "Major",
+    "Bullying": "Major",
+    "Physical Assault": "Major",
+    "Possession of Dangerous Weapons": "Major",
+    "Possession/Use of Illegal Drugs": "Major",
+    "Possession/Use of Alcoholic Beverages": "Major",
+    "Smoking Within School Premises": "Major",
+    "Theft": "Major",
+    "Gambling": "Major",
+    "Sexual Harassment": "Major",
+    "Other": "Minor"
+  };
+
+  // Handle incident type change and automatically set severity
+  const handleTypeChange = (value: string) => {
+    const selectedType = value as IncidentType;
+    const autoSeverity = incidentSeverityMap[selectedType];
+    setFormData({
+      ...formData,
+      type: selectedType,
+      severity: autoSeverity
+    });
+  };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -116,9 +164,9 @@ export function AddIncidentDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">Incident Type</Label>
-              <Select 
+              <Select
                 value={formData.type}
-                onValueChange={(value: string) => setFormData({ ...formData, type: value as IncidentType })}
+                onValueChange={handleTypeChange}
               >
                 <SelectTrigger>
                   <SelectValue />

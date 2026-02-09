@@ -51,24 +51,72 @@ const incidentTypes: IncidentType[] = [
 ];
 
 const severities: Severity[] = ["Minor", "Major"];
+
+// Mapping of incident types to their severity levels
+const incidentSeverityMap: Record<IncidentType, Severity> = {
+  "Tardiness": "Minor",
+  "Loitering": "Minor",
+  "Incomplete Uniform": "Minor",
+  "Improper Uniform": "Minor",
+  "Wearing Earrings (Male)": "Minor",
+  "Excessive Jewelry": "Minor",
+  "Colored Hair": "Minor",
+  "Tattoos": "Minor",
+  "Body Piercing": "Minor",
+  "Chewing Gum/Eating in Class": "Minor",
+  "Using Mobile Phone Without Permission": "Minor",
+  "Sleeping in Class": "Minor",
+  "Not Wearing ID": "Minor",
+  "Not Bringing School Materials": "Minor",
+  "Late Submission of Assignments": "Minor",
+  "Improper Haircut": "Minor",
+  "Cutting Classes": "Major",
+  "Leaving School Without Permission": "Major",
+  "Disrespect to Teachers/Staff/Students": "Major",
+  "Cheating in Examinations/Quizzes": "Major",
+  "Plagiarism": "Major",
+  "Forgery": "Major",
+  "Vandalism": "Major",
+  "Bullying": "Major",
+  "Physical Assault": "Major",
+  "Possession of Dangerous Weapons": "Major",
+  "Possession/Use of Illegal Drugs": "Major",
+  "Possession/Use of Alcoholic Beverages": "Major",
+  "Smoking Within School Premises": "Major",
+  "Theft": "Major",
+  "Gambling": "Major",
+  "Sexual Harassment": "Major",
+  "Other": "Minor"
+};
 const statuses: Status[] = ["Open", "Under Review", "Resolved"];
 
-export function EditIncidentDialog({ 
-  open, 
-  onOpenChange, 
+export function EditIncidentDialog({
+  open,
+  onOpenChange,
   onEditIncident,
   incident,
 }: EditIncidentDialogProps) {
   const [formData, setFormData] = useState<Incident>(incident);
-  
+
   useEffect(() => {
     setFormData(incident);
   }, [incident]);
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onEditIncident(formData);
     onOpenChange(false);
+  };
+
+  // Handle incident type change and automatically set severity
+  const handleTypeChange = (value: string) => {
+    const selectedType = value as IncidentType;
+    const autoSeverity = incidentSeverityMap[selectedType];
+    setFormData({
+      ...formData,
+      type: selectedType,
+      severity: autoSeverity
+    });
   };
   
   return (
@@ -84,7 +132,7 @@ export function EditIncidentDialog({
               <Label htmlFor="edit-type">Incident Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: string) => setFormData({ ...formData, type: value as IncidentType })}
+                onValueChange={handleTypeChange}
               >
                 <SelectTrigger id="edit-type">
                   <SelectValue />
