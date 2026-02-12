@@ -23,6 +23,17 @@ import { toast } from "sonner";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 
+// Extended student type with additional database fields
+interface FetchedStudent extends Student {
+  studentNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  yearLevel?: number;
+  educationLevel?: string;
+  course?: string;
+  contactNumber?: string;
+}
+
 export default function App() {
   const [dbStudents, setDbStudents] = useState<Student[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -40,7 +51,7 @@ export default function App() {
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
-  const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
+  const [currentStudent, setCurrentStudent] = useState<FetchedStudent | null>(null);
 
   const fetchStudents = async () => {
     try {
@@ -59,33 +70,74 @@ export default function App() {
 
   const handleAdminLogin = (user: any) => {
     if (user.role === 'Student') {
-      // For students, find their student record and show student view
-      let student = dbStudents.find((s: Student) => s.email.toLowerCase() === user.email.toLowerCase());
-
-      // If not found in mock data, create a temporary student object from user data
-      if (!student) {
-        // Fetch student data from API or create from user info
-        // For now, create a basic student object
-        student = {
-          id: `student-${user.id}`,
-          name: user.fullName,
-          email: user.email,
-          grade: 1, // Default
-          class: 'Unknown', // Default
-          parentName: undefined,
-          parentEmail: undefined,
-          parentPhone: undefined
-        };
-      }
-
-      if (student) {
-        setCurrentStudent(student);
-        setCurrentStudentId(student.id);
-        setIsStudentViewOpen(true);
-        toast.success(`Welcome, ${student.name}`);
-      } else {
-        toast.error("Student record not found. Please contact administrator.");
-      }
+      // For students, fetch their student record from the database
+      const fetchStudentData = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          // Try with the email from login response
+          const emailToQuery = user.email?.trim().toLowerCase();
+          console.log('Fetching student data for email:', emailToQuery);
+          
+          const response = await fetch(`http://localhost:5000/api/students/email/${encodeURIComponent(emailToQuery)}`, {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Response status:', response.status);
+          
+          if (response.ok) {
+            const studentData = await response.json();
+            console.log('Student data found:', studentData);
+            setCurrentStudent(studentData);
+            setCurrentStudentId(studentData.id);
+            setIsStudentViewOpen(true);
+            toast.success(`Welcome, ${studentData.name}`);
+          } else {
+            const errorData = await response.json();
+            console.error('Student not found:', errorData);
+            toast.error(errorData.message || errorData.error || 'Student record not found. Please contact administrator.');
+            
+            // If no student record found, create a temporary student object from user data
+            const student: FetchedStudent = {
+              id: `student-${user.id}`,
+              name: user.fullName,
+              email: user.email,
+              grade: 0,
+              class: '',
+              parentName: undefined,
+              parentEmail: undefined,
+              parentPhone: undefined,
+              course: '',
+              educationLevel: ''
+            };
+            setCurrentStudent(student);
+            setCurrentStudentId(student.id);
+            setIsStudentViewOpen(true);
+          }
+        } catch (error) {
+          console.error('Error fetching student data:', error);
+          // Fallback to basic student object
+          const student: FetchedStudent = {
+            id: `student-${user.id}`,
+            name: user.fullName,
+            email: user.email,
+            grade: 0,
+            class: '',
+            parentName: undefined,
+            parentEmail: undefined,
+            parentPhone: undefined,
+            course: '',
+            educationLevel: ''
+          };
+          setCurrentStudent(student);
+          setCurrentStudentId(student.id);
+          setIsStudentViewOpen(true);
+        }
+      };
+      
+      fetchStudentData();
     } else {
       // For admin/faculty staff, show admin dashboard
       setCurrentUserRole(user.role);
@@ -349,7 +401,7 @@ export default function App() {
         open={isAddUsersDialogOpen}
         onOpenChange={setIsAddUsersDialogOpen}
         onUserAdded={() => {
-          // Refresh data if needed
+          fetchStudents();
         }}
       />
     </div>

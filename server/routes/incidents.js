@@ -4,16 +4,16 @@ const { verifyToken } = require('./auth');
 
 const router = express.Router();
 
-// Get all disciplinary records (incidents)
+// Get all disciplinary cases
 router.get('/', verifyToken, async (req, res) => {
   try {
     const records = await getAllRows(`
-      SELECT dr.record_id as id,
-             dr.student_id,
-             dr.violation_id,
-             dr.reported_by,
-             dr.date_reported as date,
-             dr.status,
+      SELECT dc.case_id as id,
+             dc.student_id,
+             dc.violation_id,
+             dc.reported_by,
+             dc.date_reported as date,
+             dc.case_status as status,
              s.first_name,
              s.last_name,
              s.course as grade,
@@ -21,12 +21,12 @@ router.get('/', verifyToken, async (req, res) => {
              v.violation_name as type,
              v.severity_level as severity,
              v.description,
-             u.username as reportedByName
-      FROM disciplinary_records dr
-      LEFT JOIN students s ON dr.student_id = s.student_id
-      LEFT JOIN violations v ON dr.violation_id = v.violation_id
-      LEFT JOIN users u ON dr.reported_by = u.user_id
-      ORDER BY dr.date_reported DESC
+             u.full_name as reportedByName
+      FROM disciplinary_cases dc
+      LEFT JOIN students s ON dc.student_id = s.student_id
+      LEFT JOIN violations v ON dc.violation_id = v.violation_id
+      LEFT JOIN users u ON dc.reported_by = u.user_id
+      ORDER BY dc.date_reported DESC
     `);
 
     // Transform to match frontend expectations
@@ -39,29 +39,29 @@ router.get('/', verifyToken, async (req, res) => {
       type: record.type,
       severity: record.severity,
       description: record.description,
-      status: record.status,
+      status: record.status || 'Pending',
       reportedBy: record.reportedByName || 'Unknown',
       date: record.date,
-      communicationLogs: [] // Will be populated separately if needed
+      communicationLogs: []
     }));
 
     res.json(transformedRecords);
   } catch (error) {
-    console.error('Error fetching disciplinary records:', error);
+    console.error('Error fetching disciplinary cases:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Get disciplinary record by ID
+// Get disciplinary case by ID
 router.get('/:id', verifyToken, async (req, res) => {
   try {
     const record = await getRow(`
-      SELECT dr.record_id as id,
-             dr.student_id,
-             dr.violation_id,
-             dr.reported_by,
-             dr.date_reported as date,
-             dr.status,
+      SELECT dc.case_id as id,
+             dc.student_id,
+             dc.violation_id,
+             dc.reported_by,
+             dc.date_reported as date,
+             dc.case_status as status,
              s.first_name,
              s.last_name,
              s.course as grade,
@@ -70,15 +70,15 @@ router.get('/:id', verifyToken, async (req, res) => {
              v.severity_level as severity,
              v.description,
              u.full_name as reportedByName
-      FROM disciplinary_records dr
-      LEFT JOIN students s ON dr.student_id = s.student_id
-      LEFT JOIN violations v ON dr.violation_id = v.violation_id
-      LEFT JOIN users u ON dr.reported_by = u.user_id
-      WHERE dr.record_id = ?
+      FROM disciplinary_cases dc
+      LEFT JOIN students s ON dc.student_id = s.student_id
+      LEFT JOIN violations v ON dc.violation_id = v.violation_id
+      LEFT JOIN users u ON dc.reported_by = u.user_id
+      WHERE dc.case_id = ?
     `, [req.params.id]);
 
     if (!record) {
-      return res.status(404).json({ error: 'Disciplinary record not found' });
+      return res.status(404).json({ error: 'Disciplinary case not found' });
     }
 
     // Transform to match frontend expectations
@@ -91,7 +91,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       type: record.type,
       severity: record.severity,
       description: record.description,
-      status: record.status,
+      status: record.status || 'Pending',
       reportedBy: record.reportedByName || 'Unknown',
       date: record.date,
       communicationLogs: []
@@ -99,12 +99,12 @@ router.get('/:id', verifyToken, async (req, res) => {
 
     res.json(transformedRecord);
   } catch (error) {
-    console.error('Error fetching disciplinary record:', error);
+    console.error('Error fetching disciplinary case:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Create new disciplinary record
+// Create new disciplinary case
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { studentId, type, severity, description, status, reportedBy, date } = req.body;
@@ -130,18 +130,18 @@ router.post('/', verifyToken, async (req, res) => {
     const reportedById = user ? user.user_id : null;
 
     const result = await runQuery(
-      `INSERT INTO disciplinary_records (student_id, violation_id, reported_by, date_reported, status)
+      `INSERT INTO disciplinary_cases (student_id, violation_id, reported_by, date_reported, case_status)
        VALUES (?, ?, ?, ?, ?)`,
       [studentId, violation.violation_id, reportedById, date, status || 'Pending']
     );
 
     const newRecord = await getRow(`
-      SELECT dr.record_id as id,
-             dr.student_id,
-             dr.violation_id,
-             dr.reported_by,
-             dr.date_reported as date,
-             dr.status,
+      SELECT dc.case_id as id,
+             dc.student_id,
+             dc.violation_id,
+             dc.reported_by,
+             dc.date_reported as date,
+             dc.case_status as status,
              s.first_name,
              s.last_name,
              s.course as grade,
@@ -150,11 +150,11 @@ router.post('/', verifyToken, async (req, res) => {
              v.severity_level as severity,
              v.description,
              u.full_name as reportedByName
-      FROM disciplinary_records dr
-      LEFT JOIN students s ON dr.student_id = s.student_id
-      LEFT JOIN violations v ON dr.violation_id = v.violation_id
-      LEFT JOIN users u ON dr.reported_by = u.user_id
-      WHERE dr.record_id = ?
+      FROM disciplinary_cases dc
+      LEFT JOIN students s ON dc.student_id = s.student_id
+      LEFT JOIN violations v ON dc.violation_id = v.violation_id
+      LEFT JOIN users u ON dc.reported_by = u.user_id
+      WHERE dc.case_id = ?
     `, [result.insertId]);
 
     // Transform response
@@ -167,7 +167,7 @@ router.post('/', verifyToken, async (req, res) => {
       type: newRecord.type,
       severity: newRecord.severity,
       description: newRecord.description,
-      status: newRecord.status,
+      status: newRecord.status || 'Pending',
       reportedBy: newRecord.reportedByName || 'Unknown',
       date: newRecord.date,
       communicationLogs: []
@@ -175,12 +175,12 @@ router.post('/', verifyToken, async (req, res) => {
 
     res.status(201).json(transformedRecord);
   } catch (error) {
-    console.error('Error creating disciplinary record:', error);
+    console.error('Error creating disciplinary case:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Update disciplinary record
+// Update disciplinary case
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { studentId, type, status, date } = req.body;
@@ -190,9 +190,9 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 
     // Check if record exists
-    const existingRecord = await getRow('SELECT record_id FROM disciplinary_records WHERE record_id = ?', [req.params.id]);
+    const existingRecord = await getRow('SELECT case_id FROM disciplinary_cases WHERE case_id = ?', [req.params.id]);
     if (!existingRecord) {
-      return res.status(404).json({ error: 'Disciplinary record not found' });
+      return res.status(404).json({ error: 'Disciplinary case not found' });
     }
 
     // Check if student exists
@@ -208,19 +208,19 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 
     await runQuery(
-      `UPDATE disciplinary_records SET
-       student_id = ?, violation_id = ?, date_reported = ?, status = ?
-       WHERE record_id = ?`,
+      `UPDATE disciplinary_cases SET
+       student_id = ?, violation_id = ?, date_reported = ?, case_status = ?
+       WHERE case_id = ?`,
       [studentId, violation.violation_id, date, status || 'Pending', req.params.id]
     );
 
     const updatedRecord = await getRow(`
-      SELECT dr.record_id as id,
-             dr.student_id,
-             dr.violation_id,
-             dr.reported_by,
-             dr.date_reported as date,
-             dr.status,
+      SELECT dc.case_id as id,
+             dc.student_id,
+             dc.violation_id,
+             dc.reported_by,
+             dc.date_reported as date,
+             dc.case_status as status,
              s.first_name,
              s.last_name,
              s.course as grade,
@@ -228,12 +228,12 @@ router.put('/:id', verifyToken, async (req, res) => {
              v.violation_name as type,
              v.severity_level as severity,
              v.description,
-             u.username as reportedByName
-      FROM disciplinary_records dr
-      LEFT JOIN students s ON dr.student_id = s.student_id
-      LEFT JOIN violations v ON dr.violation_id = v.violation_id
-      LEFT JOIN users u ON dr.reported_by = u.user_id
-      WHERE dr.record_id = ?
+             u.full_name as reportedByName
+      FROM disciplinary_cases dc
+      LEFT JOIN students s ON dc.student_id = s.student_id
+      LEFT JOIN violations v ON dc.violation_id = v.violation_id
+      LEFT JOIN users u ON dc.reported_by = u.user_id
+      WHERE dc.case_id = ?
     `, [req.params.id]);
 
     // Transform response
@@ -246,7 +246,7 @@ router.put('/:id', verifyToken, async (req, res) => {
       type: updatedRecord.type,
       severity: updatedRecord.severity,
       description: updatedRecord.description,
-      status: updatedRecord.status,
+      status: updatedRecord.status || 'Pending',
       reportedBy: updatedRecord.reportedByName || 'Unknown',
       date: updatedRecord.date,
       communicationLogs: []
@@ -254,29 +254,29 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     res.json(transformedRecord);
   } catch (error) {
-    console.error('Error updating disciplinary record:', error);
+    console.error('Error updating disciplinary case:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Delete disciplinary record
+// Delete disciplinary case
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     // Check if record exists
-    const record = await getRow('SELECT record_id FROM disciplinary_records WHERE record_id = ?', [req.params.id]);
+    const record = await getRow('SELECT case_id FROM disciplinary_cases WHERE case_id = ?', [req.params.id]);
     if (!record) {
-      return res.status(404).json({ error: 'Disciplinary record not found' });
+      return res.status(404).json({ error: 'Disciplinary case not found' });
     }
 
     // Delete sanctions first
     await runQuery('DELETE FROM sanctions WHERE record_id = ?', [req.params.id]);
 
     // Delete record
-    await runQuery('DELETE FROM disciplinary_records WHERE record_id = ?', [req.params.id]);
+    await runQuery('DELETE FROM disciplinary_cases WHERE case_id = ?', [req.params.id]);
 
-    res.json({ message: 'Disciplinary record deleted successfully' });
+    res.json({ message: 'Disciplinary case deleted successfully' });
   } catch (error) {
-    console.error('Error deleting disciplinary record:', error);
+    console.error('Error deleting disciplinary case:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

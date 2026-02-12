@@ -10,8 +10,10 @@ router.get('/', verifyToken, async (req, res) => {
     const students = await getAllRows(`
       SELECT student_id as id,
              CONCAT(first_name, ' ', last_name) as name,
-             course as grade,
+             course,
              year_level as yearLevel,
+             education_level as educationLevel,
+             email,
              status,
              created_at
       FROM students
@@ -22,9 +24,11 @@ router.get('/', verifyToken, async (req, res) => {
     const transformedStudents = students.map(student => ({
       id: student.id.toString(),
       name: student.name,
-      grade: student.grade || '',
+      grade: student.yearLevel || 0,
+      course: student.course || '',
       class: student.yearLevel ? `Year ${student.yearLevel}` : '',
-      email: '', // Not in current schema
+      educationLevel: student.educationLevel || '',
+      email: student.email || '',
       status: student.status,
       createdAt: student.created_at
     }));
@@ -36,15 +40,21 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-// Get student by ID
+// Get student by ID with full profile
 router.get('/:id', verifyToken, async (req, res) => {
   try {
     const student = await getRow(`
       SELECT student_id as id,
              first_name,
              last_name,
-             course as grade,
+             course,
              year_level as yearLevel,
+             education_level as educationLevel,
+             email,
+             contact_number,
+             parent_name,
+             parent_email,
+             parent_phone,
              status,
              created_at
       FROM students
@@ -59,17 +69,114 @@ router.get('/:id', verifyToken, async (req, res) => {
     const transformedStudent = {
       id: student.id.toString(),
       name: `${student.first_name} ${student.last_name}`,
-      grade: student.grade || '',
+      firstName: student.first_name,
+      lastName: student.last_name,
+      grade: student.yearLevel || 0,
+      course: student.course || '',
       class: student.yearLevel ? `Year ${student.yearLevel}` : '',
-      email: '', // Not in current schema
+      yearLevel: student.yearLevel,
+      educationLevel: student.educationLevel || '',
+      email: student.email || '',
+      contactNumber: student.contact_number || '',
+      parentName: student.parent_name || '',
+      parentEmail: student.parent_email || '',
+      parentPhone: student.parent_phone || '',
       status: student.status,
       createdAt: student.created_at
     };
 
     res.json(transformedStudent);
   } catch (error) {
-    console.error('Error fetching student:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error fetching student by ID:', error);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
+});
+
+// Get student by email (case-insensitive)
+router.get('/email/:email', async (req, res) => {
+  try {
+    const emailParam = req.params.email;
+    console.log('Looking for student with email:', emailParam);
+    
+    // First try exact match
+    let student = await getRow(`
+      SELECT student_id as id,
+             first_name,
+             last_name,
+             course,
+             year_level as yearLevel,
+             education_level as educationLevel,
+             email,
+             contact_number,
+             parent_name,
+             parent_email,
+             parent_phone,
+             status,
+             created_at
+      FROM students
+      WHERE LOWER(email) = LOWER(?)
+    `, [emailParam]);
+
+    // If not found, try to find any student with similar email
+    if (!student) {
+      console.log('Exact match not found, trying partial match');
+      student = await getRow(`
+        SELECT student_id as id,
+               first_name,
+               last_name,
+               course,
+               year_level as yearLevel,
+               education_level as educationLevel,
+               email,
+               contact_number,
+               parent_name,
+               parent_email,
+               parent_phone,
+               status,
+               created_at
+        FROM students
+        WHERE email LIKE ?
+      `, [`%${emailParam}%`]);
+    }
+
+    // If still not found, return a clear error with available info
+    if (!student) {
+      console.log('Student not found for email:', emailParam);
+      
+      // Return helpful error message with suggestions
+      return res.status(404).json({ 
+        error: 'Student record not found',
+        message: 'No student record found with the email: ' + emailParam,
+        suggestion: 'Please contact the administrator if you believe this is an error.'
+      });
+    }
+
+    console.log('Student found:', student.email, 'Education:', student.educationLevel);
+
+    // Transform to match frontend expectations
+    const transformedStudent = {
+      id: student.id.toString(),
+      name: `${student.first_name} ${student.last_name}`,
+      firstName: student.first_name,
+      lastName: student.last_name,
+      grade: student.yearLevel || 0,
+      course: student.course || '',
+      class: student.yearLevel ? `Year ${student.yearLevel}` : '',
+      yearLevel: student.yearLevel,
+      educationLevel: student.educationLevel || '',
+      email: student.email || '',
+      contactNumber: student.contact_number || '',
+      parentName: student.parent_name || '',
+      parentEmail: student.parent_email || '',
+      parentPhone: student.parent_phone || '',
+      status: student.status,
+      createdAt: student.created_at
+    };
+
+    res.json(transformedStudent);
+  } catch (error) {
+    console.error('Error fetching student by email:', error);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 });
 

@@ -96,6 +96,46 @@ async function ensureDefaultData() {
       // Column might already exist, ignore error
     }
 
+    // Add email column to students table if it doesn't exist
+    try {
+      await pool.execute('ALTER TABLE students ADD COLUMN email VARCHAR(100)');
+      console.log('Added email column to students table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add parent_name column to students table if it doesn't exist
+    try {
+      await pool.execute('ALTER TABLE students ADD COLUMN parent_name VARCHAR(100)');
+      console.log('Added parent_name column to students table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add parent_email column to students table if it doesn't exist
+    try {
+      await pool.execute('ALTER TABLE students ADD COLUMN parent_email VARCHAR(100)');
+      console.log('Added parent_email column to students table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add parent_phone column to students table if it doesn't exist
+    try {
+      await pool.execute('ALTER TABLE students ADD COLUMN parent_phone VARCHAR(20)');
+      console.log('Added parent_phone column to students table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add education_level column to students table if it doesn't exist
+    try {
+      await pool.execute("ALTER TABLE students ADD COLUMN education_level ENUM('Senior High School', 'College') DEFAULT 'College'");
+      console.log('Added education_level column to students table');
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
     // Drop student_id_number column if it exists (no longer needed)
     try {
       await pool.execute('ALTER TABLE students DROP COLUMN student_id_number');

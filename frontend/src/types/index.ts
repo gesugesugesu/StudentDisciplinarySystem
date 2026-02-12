@@ -34,7 +34,7 @@ export type IncidentType =
   | "Other";
 
 export type Severity = "Minor" | "Major";
-export type Status = "Open" | "Resolved" | "Under Review";
+export type Status = "Open" | "Resolved" | "Under Review" | "Pending" | "Dismissed";
 
 export interface Student {
   id: string;
@@ -73,6 +73,7 @@ export interface User {
 export interface Incident {
   id: string;
   studentId: string;
+  studentName?: string;
   type: IncidentType;
   severity: Severity;
   date: string;

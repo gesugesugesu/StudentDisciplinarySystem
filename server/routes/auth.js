@@ -8,7 +8,7 @@ const router = express.Router();
 // Register new user (admin/faculty)
 router.post('/register', async (req, res) => {
   try {
-    const { password, email, fullName, role, studentId, contactNumber, course, yearLevel } = req.body;
+    const { password, email, fullName, role, studentId, contactNumber, course, yearLevel, educationLevel } = req.body;
 
     if (!password || !email || !fullName || !role) {
       return res.status(400).json({
@@ -16,9 +16,16 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    if (role === 'Student' && (!contactNumber || !course || !yearLevel)) {
+    if (role === 'Student' && (!contactNumber || !yearLevel || !educationLevel)) {
       return res.status(400).json({
-        error: 'Contact number, course, and year level are required for students'
+        error: 'Contact number, education level, and year level are required for students'
+      });
+    }
+
+    // Course is required for College students
+    if (role === 'Student' && educationLevel === 'College' && !course) {
+      return res.status(400).json({
+        error: 'Course is required for college students'
       });
     }
 
@@ -54,8 +61,8 @@ router.post('/register', async (req, res) => {
       const lastName = nameParts.slice(1).join(' ') || '';
 
       await runQuery(
-        'INSERT INTO students (first_name, last_name, course, year_level, contact_number, email, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [firstName, lastName, course, parseInt(yearLevel), contactNumber, email, 'Active']
+        'INSERT INTO students (first_name, last_name, course, year_level, contact_number, email, education_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [firstName, lastName, course || null, parseInt(yearLevel), contactNumber, email, educationLevel, 'Active']
       );
     }
 
@@ -107,6 +114,23 @@ router.post('/login', async (req, res) => {
       else if (user.status === 'rejected') message = 'Your account registration has been rejected.';
       else if (user.status === 'suspended') message = 'Your account is suspended.';
       return res.status(403).json({ error: message });
+    }
+
+    // For students, check if student record exists and create if not
+    if (user.role === 'Student') {
+      const existingStudent = await getRow('SELECT student_id FROM students WHERE email = ?', [user.email]);
+      if (!existingStudent) {
+        // Create student record from user data
+        const nameParts = (user.full_name || '').split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        await runQuery(
+          'INSERT INTO students (first_name, last_name, email, status) VALUES (?, ?, ?, ?)',
+          [firstName, lastName, user.email, 'Active']
+        );
+        console.log('Created student record for user:', user.email);
+      }
     }
 
     // Generate JWT token

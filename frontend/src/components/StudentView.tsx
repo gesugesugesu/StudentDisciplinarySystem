@@ -8,12 +8,21 @@ import { Student, Incident } from "../types";
 import { format } from "date-fns";
 
 interface StudentViewProps {
-  student: Student;
+  student: Student & {
+    studentNumber?: string;
+    firstName?: string;
+    lastName?: string;
+    yearLevel?: number;
+    educationLevel?: string;
+    course?: string;
+    contactNumber?: string;
+  };
   incidents: Incident[];
   onLogout: () => void;
 }
 
 export function StudentView({ student, incidents, onLogout }: StudentViewProps) {
+  // The student prop now contains all the data fetched from the database
   const studentIncidents = incidents.filter(i => i.studentId === student.id);
   const openIncidents = studentIncidents.filter(i => i.status === "Open").length;
   const resolvedIncidents = studentIncidents.filter(i => i.status === "Resolved").length;
@@ -33,6 +42,24 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
       case "Under Review": return "default";
       default: return "secondary";
     }
+  };
+  
+  // Helper function to format student level display
+  const formatStudentLevel = () => {
+    const { educationLevel, course, class: classLevel } = student;
+    
+    // If we have valid data from database
+    if (educationLevel === 'College') {
+      return `College${course ? ` • ${course}` : ''}${classLevel && classLevel !== 'Unknown' ? ` • ${classLevel}` : ''}`;
+    }
+    if (educationLevel === 'Senior High School') {
+      return `Senior High School${classLevel && classLevel !== 'Unknown' ? ` • ${classLevel}` : ''}`;
+    }
+    if (classLevel && classLevel !== 'Unknown') {
+      return `Student • ${classLevel}`;
+    }
+    // Default fallback
+    return 'Student • Not Specified';
   };
   
   return (
@@ -69,17 +96,24 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
             <div className="flex-1 space-y-4">
               <div>
                 <h2>{student.name}</h2>
-                <p className="text-muted-foreground">Grade {student.grade} - {student.class}</p>
+                <p className="text-muted-foreground">{formatStudentLevel()}</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Mail className="h-4 w-4" />
-                  <span>{student.email}</span>
+                  <span>{student.email || 'No email provided'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <GraduationCap className="h-4 w-4" />
-                  <span>Class: {student.class}</span>
-                </div>
+                {student.contactNumber && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{student.contactNumber}</span>
+                  </div>
+                )}
+                {student.studentNumber && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span>Student No: {student.studentNumber}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

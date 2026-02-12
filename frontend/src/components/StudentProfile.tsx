@@ -17,10 +17,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { ArrowLeft, User, Mail, GraduationCap, MoreVertical, Edit, Trash2, Bell, Phone, Download } from "lucide-react";
+import { ArrowLeft, User, Mail, GraduationCap, MoreVertical, Edit, Trash2, Bell, Phone, Download, Loader2 } from "lucide-react";
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { exportStudentReport, exportStudentIncidentsCSV } from "../utils/exportUtils";
 import { toast } from "sonner";
 
@@ -34,6 +34,16 @@ interface StudentProfileProps {
   onNotifyParent: (incident: Incident) => void;
 }
 
+interface FetchedStudent extends Student {
+  studentNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  yearLevel?: number;
+  educationLevel?: string;
+  contactNumber?: string;
+  course?: string;
+}
+
 export function StudentProfile({ 
   student, 
   incidents, 
@@ -44,7 +54,49 @@ export function StudentProfile({
   onNotifyParent,
 }: StudentProfileProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const studentIncidents = incidents.filter(i => i.studentId === student.id);
+  const [fetchedStudent, setFetchedStudent] = useState<FetchedStudent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch student profile data from API
+  useEffect(() => {
+    const fetchStudentProfile = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5000/api/students/${student.id}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Student not found');
+          }
+          throw new Error('Failed to fetch student profile');
+        }
+        
+        const data = await response.json();
+        setFetchedStudent(data);
+      } catch (err) {
+        console.error('Error fetching student profile:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load student profile');
+        // Fallback to prop data
+        setFetchedStudent(student);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudentProfile();
+  }, [student.id]);
+
+  // Use fetched data if available, otherwise fall back to prop
+  const displayStudent = fetchedStudent || student;
+  const studentIncidents = incidents.filter(i => i.studentId === displayStudent.id);
   
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -63,14 +115,59 @@ export function StudentProfile({
   };
   
   const handleExportPDF = () => {
-    exportStudentReport(student, studentIncidents);
+    exportStudentReport(displayStudent, studentIncidents);
     toast.success("Student report exported to PDF");
   };
 
   const handleExportCSV = () => {
-    exportStudentIncidentsCSV(student, studentIncidents);
+    exportStudentIncidentsCSV(displayStudent, studentIncidents);
     toast.success("Student incidents exported to CSV");
   };
+  
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h2>Student Profile</h2>
+            <p className="text-muted-foreground">Loading student data...</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with fallback
+  if (error && !fetchedStudent) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h2>Student Profile</h2>
+            <p className="text-destructive">{error}</p>
+          </div>
+        </div>
+        <Card className="p-12">
+          <div className="text-center">
+            <p className="text-muted-foreground">Unable to load student profile.</p>
+            <Button onClick={onBack} className="mt-4" variant="outline">
+              Go Back
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -108,16 +205,31 @@ export function StudentProfile({
               <User className="h-10 w-10 text-primary" />
             </div>
             <div className="flex-1">
-              <h3>{student.name}</h3>
+              <h3>{displayStudent.name}</h3>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Grade {student.grade} • {student.class}</span>
+                  <span className="text-muted-foreground">
+                    {fetchedStudent?.educationLevel || 'Student'}
+                    {fetchedStudent?.course && ` • ${fetchedStudent.course}`}
+                    {displayStudent.class && ` • ${displayStudent.class}`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{student.email}</span>
+                  <span className="text-muted-foreground">{displayStudent.email || 'No email provided'}</span>
                 </div>
+                {fetchedStudent?.studentNumber && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Student No: {fetchedStudent.studentNumber}</span>
+                  </div>
+                )}
+                {fetchedStudent?.contactNumber && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{fetchedStudent.contactNumber}</span>
+                  </div>
+                )}
                 <div>
                   <Badge variant="secondary">
                     {studentIncidents.length} Total {studentIncidents.length === 1 ? "Incident" : "Incidents"}
@@ -131,14 +243,14 @@ export function StudentProfile({
         <Card className="p-6">
           <h4 className="mb-3">Parent/Guardian Contact</h4>
           <div className="space-y-2">
-            <p>{student.parentName || "Not available"}</p>
+            <p>{displayStudent.parentName || "Not available"}</p>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Mail className="h-4 w-4" />
-              <span>{student.parentEmail || "Not available"}</span>
+              <span>{displayStudent.parentEmail || "Not available"}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Phone className="h-4 w-4" />
-              <span>{student.parentPhone || "Not available"}</span>
+              <span>{displayStudent.parentPhone || "Not available"}</span>
             </div>
           </div>
         </Card>

@@ -104,9 +104,7 @@ export function Register() {
             contactNumber,
             educationLevel,
             yearLevel,
-            ...(educationLevel === 'College' && {
-              course,
-            }),
+            course: educationLevel === 'College' ? course : null,
           }),
         }),
       });
