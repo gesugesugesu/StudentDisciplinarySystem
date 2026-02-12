@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { User, UserRole, UserStatus, Incident } from "../types";
 import { toast } from "sonner";
 import { AddUsersDialog } from "./AddUsersDialog";
+import { ViolationManagement } from "./ViolationManagement";
 import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare } from "lucide-react";
 
 export function AdminDashboard() {
@@ -402,6 +403,7 @@ export function AdminDashboard() {
           <TabsTrigger value="users">All Users ({totalUsers})</TabsTrigger>
           <TabsTrigger value="incidents">Incident Reports ({totalIncidents})</TabsTrigger>
           <TabsTrigger value="records">Student Records ({totalStudentRecords})</TabsTrigger>
+          <TabsTrigger value="violations">Violation Management</TabsTrigger>
           <TabsTrigger value="stats">User Statistics</TabsTrigger>
         </TabsList>
 
@@ -849,6 +851,10 @@ export function AdminDashboard() {
               </div>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="violations">
+          <ViolationManagement />
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-4">

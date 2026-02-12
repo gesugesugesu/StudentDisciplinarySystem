@@ -107,7 +107,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 // Create new disciplinary case
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { studentId, type, severity, description, status, reportedBy, date } = req.body;
+    const { studentId, type, severity, description, status, date } = req.body;
 
     if (!studentId || !type || !date) {
       return res.status(400).json({ error: 'Student ID, type, and date are required' });
@@ -120,19 +120,29 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     // Find violation by name
-    const violation = await getRow('SELECT violation_id FROM violations WHERE violation_name = ?', [type]);
+    let violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
     if (!violation) {
-      return res.status(400).json({ error: 'Invalid violation type' });
+      // Auto-create the violation if it doesn't exist
+      const defaultCategory = 'General';
+      const defaultSeverity = severity || 'Minor';
+      const insertResult = await runQuery(
+        'INSERT INTO violations (violation_name, category, severity_level, description) VALUES (?, ?, ?, ?)',
+        [type, defaultCategory, defaultSeverity, description || 'Auto-created from incident submission']
+      );
+      violation = { id: insertResult.insertId };
     }
 
-    // Find user by email for reported_by
-    const user = await getRow('SELECT user_id FROM users WHERE email = ?', [reportedBy]);
-    const reportedById = user ? user.user_id : null;
+    // Get the current user ID from the token
+    const reportedById = req.user?.id || null;
+
+    if (!reportedById) {
+      return res.status(400).json({ error: 'Unable to identify the reporting user' });
+    }
 
     const result = await runQuery(
       `INSERT INTO disciplinary_cases (student_id, violation_id, reported_by, date_reported, case_status)
        VALUES (?, ?, ?, ?, ?)`,
-      [studentId, violation.violation_id, reportedById, date, status || 'Pending']
+      [studentId, violation.id, reportedById, date, status || 'Pending']
     );
 
     const newRecord = await getRow(`
@@ -202,7 +212,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 
     // Find violation by name
-    const violation = await getRow('SELECT violation_id FROM violations WHERE violation_name = ?', [type]);
+    const violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
     if (!violation) {
       return res.status(400).json({ error: 'Invalid violation type' });
     }
@@ -211,7 +221,7 @@ router.put('/:id', verifyToken, async (req, res) => {
       `UPDATE disciplinary_cases SET
        student_id = ?, violation_id = ?, date_reported = ?, case_status = ?
        WHERE case_id = ?`,
-      [studentId, violation.violation_id, date, status || 'Pending', req.params.id]
+      [studentId, violation.id, date, status || 'Pending', req.params.id]
     );
 
     const updatedRecord = await getRow(`
@@ -284,7 +294,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 // Get violations list
 router.get('/violations/list', verifyToken, async (req, res) => {
   try {
-    const violations = await getAllRows('SELECT * FROM violations ORDER BY violation_name');
+    const violations = await getAllRows('SELECT violation_id as id, violation_name as name, category, severity_level as severity, description FROM violations ORDER BY violation_name');
     res.json(violations);
   } catch (error) {
     console.error('Error fetching violations:', error);

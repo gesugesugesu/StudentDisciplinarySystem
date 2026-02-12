@@ -34,6 +34,7 @@ export type IncidentType =
   | "Other";
 
 export type Severity = "Minor" | "Major";
+export type ViolationCategory = "Uniform & Grooming" | "Behavior" | "Classroom Conduct" | "Academic" | "Attendance" | "Property" | "Safety";
 export type Status = "Open" | "Resolved" | "Under Review" | "Pending" | "Dismissed";
 
 export interface Student {
@@ -75,6 +76,7 @@ export interface Incident {
   studentId: string;
   studentName?: string;
   type: IncidentType;
+  violationId?: string;
   severity: Severity;
   date: string;
   description: string;
@@ -82,4 +84,12 @@ export interface Incident {
   status: Status;
   reportedBy: string;
   communicationLogs?: CommunicationLog[];
+}
+
+export interface Violation {
+  id?: number;
+  name: string;
+  category: string | null;
+  severity: Severity;
+  description: string | null;
 }

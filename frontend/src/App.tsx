@@ -7,6 +7,7 @@ import { StudentList } from "./components/StudentList";
 import { StudentProfile } from "./components/StudentProfile";
 import { AllIncidents } from "./components/AllIncidents";
 import { AddIncidentDialog } from "./components/AddIncidentDialog";
+import { AddIncidentForm } from "./components/AddIncidentForm";
 import { EditIncidentDialog } from "./components/EditIncidentDialog";
 import { ParentNotificationDialog } from "./components/ParentNotificationDialog";
 import { Login } from "./components/Login";
@@ -175,13 +176,29 @@ export default function App() {
     toast.success("Returned to main page");
   };
   
-  const handleAddIncident = (newIncident: Omit<Incident, "id">) => {
-    const incident: Incident = {
-      ...newIncident,
-      id: `inc-${Date.now()}`,
-    };
-    setIncidents([...incidents, incident]);
-    toast.success("Incident added successfully");
+  const handleAddIncident = async (newIncident: Omit<Incident, "id">) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/incidents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(newIncident)
+      });
+      
+      if (response.ok) {
+        const savedIncident = await response.json();
+        setIncidents([...incidents, savedIncident]);
+        toast.success('Incident added successfully');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to add incident');
+      }
+    } catch (error) {
+      toast.error('Error adding incident');
+    }
   };
   
   const handleEditIncident = (incident: Incident) => {
@@ -299,10 +316,6 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button onClick={handleAddIncidentClick}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Incident
-              </Button>
               {currentUserRole === 'Super Admin' && (
                 <Button variant="outline" onClick={() => setIsAddUsersDialogOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
@@ -337,6 +350,7 @@ export default function App() {
                   <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                   <TabsTrigger value="students">Students</TabsTrigger>
                   <TabsTrigger value="incidents">All Incidents</TabsTrigger>
+                  <TabsTrigger value="add-incident">Add Incident</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="dashboard">
@@ -359,6 +373,13 @@ export default function App() {
                     onEditIncident={handleEditIncident}
                     onDeleteIncident={handleDeleteIncident}
                     onNotifyParent={handleNotifyParent}
+                  />
+                </TabsContent>
+
+                <TabsContent value="add-incident">
+                  <AddIncidentForm
+                    onAddIncident={handleAddIncident}
+                    students={dbStudents}
                   />
                 </TabsContent>
               </Tabs>
