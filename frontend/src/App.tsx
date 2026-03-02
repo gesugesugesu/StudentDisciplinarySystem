@@ -18,7 +18,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { AddUsersDialog } from "./components/AddUsersDialog";
 // Removed mock data import
 import { Incident, CommunicationLog, UserRole, Student } from "./types";
-import { Plus, LogOut, UserPlus } from "lucide-react";
+import { Plus, LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
@@ -316,12 +316,6 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-3">
-              {currentUserRole === 'Super Admin' && (
-                <Button variant="outline" onClick={() => setIsAddUsersDialogOpen(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Users
-                </Button>
-              )}
               <Button variant="outline" onClick={handleAdminLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout

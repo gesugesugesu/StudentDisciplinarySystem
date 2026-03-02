@@ -25,7 +25,7 @@ export function AddIncidentDialog({
   const [formData, setFormData] = useState({
     studentId: preselectedStudentId || "",
     type: "Tardiness" as IncidentType,
-    severity: "Minor" as Severity,
+    severity: "Category 1 Offense" as Severity,
     date: new Date().toISOString().split('T')[0],
     description: "",
     actionTaken: "",
@@ -40,7 +40,7 @@ export function AddIncidentDialog({
     setFormData({
       studentId: preselectedStudentId || "",
       type: "Tardiness",
-      severity: "Minor",
+      severity: "Category 1 Offense",
       date: new Date().toISOString().split('T')[0],
       description: "",
       actionTaken: "",
@@ -87,39 +87,39 @@ export function AddIncidentDialog({
 
   // Mapping of incident types to their severity levels
   const incidentSeverityMap: Record<IncidentType, Severity> = {
-    "Tardiness": "Minor",
-    "Loitering": "Minor",
-    "Incomplete Uniform": "Minor",
-    "Improper Uniform": "Minor",
-    "Wearing Earrings (Male)": "Minor",
-    "Excessive Jewelry": "Minor",
-    "Colored Hair": "Minor",
-    "Tattoos": "Minor",
-    "Body Piercing": "Minor",
-    "Chewing Gum/Eating in Class": "Minor",
-    "Using Mobile Phone Without Permission": "Minor",
-    "Sleeping in Class": "Minor",
-    "Not Wearing ID": "Minor",
-    "Not Bringing School Materials": "Minor",
-    "Late Submission of Assignments": "Minor",
-    "Improper Haircut": "Minor",
-    "Cutting Classes": "Major",
-    "Leaving School Without Permission": "Major",
-    "Disrespect to Teachers/Staff/Students": "Major",
-    "Cheating in Examinations/Quizzes": "Major",
-    "Plagiarism": "Major",
-    "Forgery": "Major",
-    "Vandalism": "Major",
-    "Bullying": "Major",
-    "Physical Assault": "Major",
-    "Possession of Dangerous Weapons": "Major",
-    "Possession/Use of Illegal Drugs": "Major",
-    "Possession/Use of Alcoholic Beverages": "Major",
-    "Smoking Within School Premises": "Major",
-    "Theft": "Major",
-    "Gambling": "Major",
-    "Sexual Harassment": "Major",
-    "Other": "Minor"
+    "Tardiness": "Category 1 Offense",
+    "Loitering": "Category 1 Offense",
+    "Incomplete Uniform": "Category 1 Offense",
+    "Improper Uniform": "Category 1 Offense",
+    "Wearing Earrings (Male)": "Category 1 Offense",
+    "Excessive Jewelry": "Category 1 Offense",
+    "Colored Hair": "Category 1 Offense",
+    "Tattoos": "Category 1 Offense",
+    "Body Piercing": "Category 1 Offense",
+    "Chewing Gum/Eating in Class": "Category 1 Offense",
+    "Using Mobile Phone Without Permission": "Category 1 Offense",
+    "Sleeping in Class": "Category 1 Offense",
+    "Not Wearing ID": "Category 1 Offense",
+    "Not Bringing School Materials": "Category 1 Offense",
+    "Late Submission of Assignments": "Category 1 Offense",
+    "Improper Haircut": "Category 1 Offense",
+    "Cutting Classes": "Category 2 Offense",
+    "Leaving School Without Permission": "Category 2 Offense",
+    "Disrespect to Teachers/Staff/Students": "Category 2 Offense",
+    "Cheating in Examinations/Quizzes": "Category 2 Offense",
+    "Plagiarism": "Category 2 Offense",
+    "Forgery": "Category 2 Offense",
+    "Vandalism": "Category 2 Offense",
+    "Bullying": "Category 2 Offense",
+    "Physical Assault": "Category 3 Offense",
+    "Possession of Dangerous Weapons": "Category 3 Offense",
+    "Possession/Use of Illegal Drugs": "Category 3 Offense",
+    "Possession/Use of Alcoholic Beverages": "Category 3 Offense",
+    "Smoking Within School Premises": "Category 3 Offense",
+    "Theft": "Category 3 Offense",
+    "Gambling": "Category 3 Offense",
+    "Sexual Harassment": "Category 3 Offense",
+    "Other": "Category 1 Offense"
   };
 
   // Handle incident type change and automatically set severity
@@ -182,7 +182,7 @@ export function AddIncidentDialog({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="severity">Severity</Label>
+              <Label htmlFor="severity">Category</Label>
               <Select 
                 value={formData.severity}
                 onValueChange={(value: string) => setFormData({ ...formData, severity: value as Severity })}
@@ -191,8 +191,9 @@ export function AddIncidentDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Minor">Minor</SelectItem>
-                  <SelectItem value="Major">Major</SelectItem>
+                  <SelectItem value="Category 1 Offense">Category 1 Offense</SelectItem>
+                  <SelectItem value="Category 2 Offense">Category 2 Offense</SelectItem>
+                  <SelectItem value="Category 3 Offense">Category 3 Offense</SelectItem>
                 </SelectContent>
               </Select>
             </div>

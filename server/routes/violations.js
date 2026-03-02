@@ -6,7 +6,7 @@ const router = express.Router();
 // Get all violations
 router.get('/', async (req, res) => {
   try {
-    const violations = await getAllRows('SELECT violation_id as id, violation_name as name, category, severity_level as severity, description FROM violations ORDER BY violation_name ASC');
+    const violations = await getAllRows('SELECT violation_id as id, violation_name as name, category as severity, description FROM violations ORDER BY violation_name ASC');
     res.json(violations);
   } catch (err) {
     console.error('Error fetching violations:', err);
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const violation = await getRow('SELECT violation_id as id, violation_name as name, category, severity_level as severity, description FROM violations WHERE violation_id = ?', [id]);
+    const violation = await getRow('SELECT violation_id as id, violation_name as name, category as severity, description FROM violations WHERE violation_id = ?', [id]);
     if (!violation) {
       return res.status(404).json({ error: 'Violation not found' });
     }
@@ -39,13 +39,13 @@ router.post('/', async (req, res) => {
   
   try {
     const result = await runQuery(
-      'INSERT INTO violations (violation_name, category, severity_level, description) VALUES (?, ?, ?, ?)',
-      [name, category || null, severity, description || null]
+      'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
+      [name, severity, description || null]
     );
     res.status(201).json({
       id: result.insertId,
       name,
-      category,
+      category: severity,
       severity,
       description
     });
@@ -62,8 +62,8 @@ router.put('/:id', async (req, res) => {
   
   try {
     const result = await runQuery(
-      'UPDATE violations SET violation_name = ?, category = ?, severity_level = ?, description = ? WHERE violation_id = ?',
-      [name, category, severity, description, id]
+      'UPDATE violations SET violation_name = ?, category = ?, description = ? WHERE violation_id = ?',
+      [name, severity, description, id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Violation not found' });
@@ -80,6 +80,14 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
+    // Check if there are related incidents
+    const relatedCases = await getRow('SELECT case_id FROM disciplinary_cases WHERE violation_id = ?', [id]);
+    const relatedRecords = await getRow('SELECT record_id FROM disciplinary_records WHERE violation_id = ?', [id]);
+    
+    if (relatedCases || relatedRecords) {
+      return res.status(400).json({ error: 'Cannot delete this violation as it is linked to existing incidents' });
+    }
+    
     const result = await runQuery('DELETE FROM violations WHERE violation_id = ?', [id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Violation not found' });

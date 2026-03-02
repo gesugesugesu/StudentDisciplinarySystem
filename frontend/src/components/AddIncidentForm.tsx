@@ -25,7 +25,7 @@ export function AddIncidentForm({
   const [formData, setFormData] = useState({
     studentId: preselectedStudentId || "",
     type: "" as string,
-    severity: "Minor" as Severity,
+    severity: "Category 1 Offense" as Severity,
     date: new Date().toISOString().split('T')[0],
     description: "",
     actionTaken: "",
@@ -74,7 +74,7 @@ export function AddIncidentForm({
     setFormData({
       studentId: preselectedStudentId || "",
       type: violations[0]?.name || "",
-      severity: violations[0]?.severity || "Minor",
+      severity: violations[0]?.severity || "Category 1 Offense",
       date: new Date().toISOString().split('T')[0],
       description: "",
       actionTaken: "",
@@ -89,7 +89,7 @@ export function AddIncidentForm({
     setFormData({
       ...formData,
       type: value,
-      severity: selectedViolation?.severity || "Minor"
+      severity: selectedViolation?.severity || "Category 1 Offense"
     });
   };
   
@@ -165,7 +165,7 @@ export function AddIncidentForm({
               <div className="space-y-2">
                 <Label htmlFor="severity" className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  Severity
+                  Category
                 </Label>
                 <Select 
                   value={formData.severity}
@@ -175,8 +175,9 @@ export function AddIncidentForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Minor">Minor</SelectItem>
-                    <SelectItem value="Major">Major</SelectItem>
+                    <SelectItem value="Category 1 Offense">Category 1 Offense</SelectItem>
+                    <SelectItem value="Category 2 Offense">Category 2 Offense</SelectItem>
+                    <SelectItem value="Category 3 Offense">Category 3 Offense</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -259,7 +260,7 @@ export function AddIncidentForm({
                 setFormData({
                   studentId: preselectedStudentId || "",
                   type: violations[0]?.name || "",
-                  severity: violations[0]?.severity || "Minor",
+                  severity: violations[0]?.severity || "Category 1 Offense",
                   date: new Date().toISOString().split('T')[0],
                   description: "",
                   actionTaken: "",

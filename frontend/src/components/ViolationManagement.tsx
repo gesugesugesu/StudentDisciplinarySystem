@@ -6,10 +6,44 @@ import { Label } from "./ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { Badge } from "./ui/badge";
 import { Violation, Severity } from "../types";
-import { Plus, Pencil, Trash2, RefreshCw, AlertTriangle, BookOpen, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, AlertTriangle, BookOpen, FileText, XCircle } from "lucide-react";
 import { toast } from "sonner";
+
+// Handbook-based category mapping
+const category1Offenses = [
+  "No ID","Distracting Behavior","Unauthorized Posting","Improper Uniform","Pornographic Materials",
+  "Accessing Pornographic Content","Grooming Violation","Inappropriate Attire","Skipping Drills","ID Tampering"
+];
+
+const category2Offenses = [
+  "Bullying", "Fighting","Alcohol Possession/Use","Gambling","Cheating","Plagiarism","Document Falsification",
+  "ID/Permit Lending", "Provoking fights","Disrespect to authority","Dishonesty to authority","Defiance to authority",
+  "Vandalism", "Unauthorized activities", "Computer tampering", "Unauthorized recruitment","Public indecency",
+  "Smoking on campus","Profanity or indecent conduct","Unauthorized school representation"
+];
+
+const category3Offenses = [
+  "Exam Misrepresentation", "Assault on Faculty","Theft/Attempted Theft","Assault on Student",,
+  "Hazing Participation", "Presence at hazing","Hazing leadership liability","Off-campus misconduct",
+  "Moral turpitude", "Illegal organization membership", "Illegal Drugs possession/use", "Weapon possession/use"
+];
+
+function getAutoCategory(violationName: string): Severity {
+  const name = violationName.trim();
+  if (category1Offenses.some(o => o.toLowerCase() === name.toLowerCase())) {
+    return "Category 1 Offense";
+  }
+  if (category2Offenses.some(o => o.toLowerCase() === name.toLowerCase())) {
+    return "Category 2 Offense";
+  }
+  if (category3Offenses.some(o => o.toLowerCase() === name.toLowerCase())) {
+    return "Category 3 Offense";
+  }
+  return "Category 1 Offense"; // Default to Category 1
+}
 
 export function ViolationManagement() {
   const [violations, setViolations] = useState<Violation[]>([]);
@@ -17,11 +51,11 @@ export function ViolationManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedViolation, setSelectedViolation] = useState<Violation | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
-    category: "",
-    severity: "Minor" as Severity,
+    severity: "Category 1 Offense" as Severity,
     description: "",
   });
 
@@ -54,7 +88,6 @@ export function ViolationManagement() {
       setSelectedViolation(violation);
       setFormData({
         name: violation.name,
-        category: violation.category || "",
         severity: violation.severity,
         description: violation.description || "",
       });
@@ -63,12 +96,21 @@ export function ViolationManagement() {
       setSelectedViolation(null);
       setFormData({
         name: "",
-        category: "",
-        severity: "Minor",
+        severity: "Category 1 Offense",
         description: "",
       });
     }
     setIsDialogOpen(true);
+  };
+
+  const handleNameChange = (name: string) => {
+    // Auto-categorize based on handbook when in add mode
+    if (!isEditMode && name) {
+      const autoCategory = getAutoCategory(name);
+      setFormData({ ...formData, name, severity: autoCategory });
+    } else {
+      setFormData({ ...formData, name });
+    }
   };
 
   const handleCloseDialog = () => {
@@ -110,11 +152,16 @@ export function ViolationManagement() {
   };
 
   const handleDelete = async (id?: number) => {
-    if (!id || !confirm('Are you sure you want to delete this incident type?')) return;
+    if (!id) return;
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/violations/${id}`, {
+      const response = await fetch(`${API_BASE}/violations/${deleteId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -123,10 +170,13 @@ export function ViolationManagement() {
         toast.success('Incident type deleted successfully');
         fetchIncidentTypes();
       } else {
-        toast.error('Failed to delete incident type');
+        const data = await response.json();
+        toast.error(data.error || 'Failed to delete incident type');
       }
     } catch (error) {
       toast.error('Error deleting incident type');
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -162,37 +212,48 @@ export function ViolationManagement() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      <div className="flex gap-3">
+        <Card className="p-3 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Types</p>
-              <p className="text-2xl font-bold">{violations.length}</p>
+              <p className="text-xs text-muted-foreground">Total Types</p>
+              <p className="text-xl font-bold">{violations.length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+        <Card className="p-3 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Minor Violations</p>
-              <p className="text-2xl font-bold">{violations.filter(v => v.severity === 'Minor').length}</p>
+              <p className="text-xs text-muted-foreground">Cat 1</p>
+              <p className="text-xl font-bold">{violations.filter(v => v.severity === 'Category 1 Offense').length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+        <Card className="p-3 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+              <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Major Violations</p>
-              <p className="text-2xl font-bold">{violations.filter(v => v.severity === 'Major').length}</p>
+              <p className="text-xs text-muted-foreground">Cat 2</p>
+              <p className="text-xl font-bold">{violations.filter(v => v.severity === 'Category 2 Offense').length}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-3 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Cat 3</p>
+              <p className="text-xl font-bold">{violations.filter(v => v.severity === 'Category 3 Offense').length}</p>
             </div>
           </div>
         </Card>
@@ -209,7 +270,6 @@ export function ViolationManagement() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Severity</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -218,9 +278,8 @@ export function ViolationManagement() {
               {violations.map((violation) => (
                 <TableRow key={violation.id}>
                   <TableCell className="font-medium">{violation.name}</TableCell>
-                  <TableCell>{violation.category || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant={violation.severity === 'Minor' ? 'secondary' : 'destructive'}>
+                    <Badge variant={violation.severity === 'Category 1 Offense' ? 'secondary' : 'destructive'}>
                       {violation.severity}
                     </Badge>
                   </TableCell>
@@ -267,24 +326,14 @@ export function ViolationManagement() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="e.g., Tardiness"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="e.g., Uniform & Grooming, Behavior, Academic"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="severity">Severity</Label>
+              <Label htmlFor="severity">Category</Label>
               <Select
                 value={formData.severity}
                 onValueChange={(value: string) => setFormData({ ...formData, severity: value as Severity })}
@@ -293,8 +342,9 @@ export function ViolationManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Minor">Minor</SelectItem>
-                  <SelectItem value="Major">Major</SelectItem>
+                  <SelectItem value="Category 1 Offense">Category 1 Offense</SelectItem>
+                  <SelectItem value="Category 2 Offense">Category 2 Offense</SelectItem>
+                  <SelectItem value="Category 3 Offense">Category 3 Offense</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -320,6 +370,28 @@ export function ViolationManagement() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteId !== null} onOpenChange={(open: boolean) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-500" />
+              Delete Incident Type
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this incident type? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+

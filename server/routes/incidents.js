@@ -19,7 +19,7 @@ router.get('/', verifyToken, async (req, res) => {
              s.course as grade,
              s.year_level,
              v.violation_name as type,
-             v.severity_level as severity,
+             v.category as severity,
              v.description,
              u.full_name as reportedByName
       FROM disciplinary_cases dc
@@ -48,11 +48,11 @@ router.get('/', verifyToken, async (req, res) => {
     res.json(transformedRecords);
   } catch (error) {
     console.error('Error fetching disciplinary cases:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch disciplinary cases' });
   }
 });
 
-// Get disciplinary case by ID
+// Get single disciplinary case by ID
 router.get('/:id', verifyToken, async (req, res) => {
   try {
     const record = await getRow(`
@@ -67,7 +67,7 @@ router.get('/:id', verifyToken, async (req, res) => {
              s.course as grade,
              s.year_level,
              v.violation_name as type,
-             v.severity_level as severity,
+             v.category as severity,
              v.description,
              u.full_name as reportedByName
       FROM disciplinary_cases dc
@@ -78,10 +78,9 @@ router.get('/:id', verifyToken, async (req, res) => {
     `, [req.params.id]);
 
     if (!record) {
-      return res.status(404).json({ error: 'Disciplinary case not found' });
+      return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Transform to match frontend expectations
     const transformedRecord = {
       id: record.id.toString(),
       studentId: record.student_id.toString(),
@@ -100,34 +99,27 @@ router.get('/:id', verifyToken, async (req, res) => {
     res.json(transformedRecord);
   } catch (error) {
     console.error('Error fetching disciplinary case:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch disciplinary case' });
   }
 });
 
 // Create new disciplinary case
 router.post('/', verifyToken, async (req, res) => {
+  const { studentId, type, severity, date, description, actionTaken, status, reportedBy } = req.body;
+
+  if (!studentId || !type || !date || !reportedBy) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
   try {
-    const { studentId, type, severity, description, status, date } = req.body;
-
-    if (!studentId || !type || !date) {
-      return res.status(400).json({ error: 'Student ID, type, and date are required' });
-    }
-
-    // Check if student exists
-    const student = await getRow('SELECT student_id FROM students WHERE student_id = ?', [studentId]);
-    if (!student) {
-      return res.status(400).json({ error: 'Invalid student ID' });
-    }
-
     // Find violation by name
     let violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
     if (!violation) {
       // Auto-create the violation if it doesn't exist
-      const defaultCategory = 'General';
-      const defaultSeverity = severity || 'Minor';
+      const defaultCategory = severity || 'Category 1 Offense';
       const insertResult = await runQuery(
-        'INSERT INTO violations (violation_name, category, severity_level, description) VALUES (?, ?, ?, ?)',
-        [type, defaultCategory, defaultSeverity, description || 'Auto-created from incident submission']
+        'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
+        [type, defaultCategory, description || 'Auto-created from incident submission']
       );
       violation = { id: insertResult.insertId };
     }
@@ -140,11 +132,11 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     const result = await runQuery(
-      `INSERT INTO disciplinary_cases (student_id, violation_id, reported_by, date_reported, case_status)
-       VALUES (?, ?, ?, ?, ?)`,
+      'INSERT INTO disciplinary_cases (student_id, violation_id, reported_by, date_reported, case_status) VALUES (?, ?, ?, ?, ?)',
       [studentId, violation.id, reportedById, date, status || 'Pending']
     );
 
+    // Get the created record with joined data
     const newRecord = await getRow(`
       SELECT dc.case_id as id,
              dc.student_id,
@@ -157,7 +149,7 @@ router.post('/', verifyToken, async (req, res) => {
              s.course as grade,
              s.year_level,
              v.violation_name as type,
-             v.severity_level as severity,
+             v.category as severity,
              v.description,
              u.full_name as reportedByName
       FROM disciplinary_cases dc
@@ -186,44 +178,46 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(201).json(transformedRecord);
   } catch (error) {
     console.error('Error creating disciplinary case:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to create disciplinary case' });
   }
 });
 
 // Update disciplinary case
 router.put('/:id', verifyToken, async (req, res) => {
+  const { studentId, type, severity, date, description, status, reportedBy } = req.body;
+  const { id } = req.params;
+
   try {
-    const { studentId, type, status, date } = req.body;
-
-    if (!studentId || !type || !date) {
-      return res.status(400).json({ error: 'Student ID, type, and date are required' });
+    // First get the current case to find violation_id
+    const currentCase = await getRow('SELECT violation_id FROM disciplinary_cases WHERE case_id = ?', [id]);
+    
+    if (!currentCase) {
+      return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Check if record exists
-    const existingRecord = await getRow('SELECT case_id FROM disciplinary_cases WHERE case_id = ?', [req.params.id]);
-    if (!existingRecord) {
-      return res.status(404).json({ error: 'Disciplinary case not found' });
-    }
-
-    // Check if student exists
-    const student = await getRow('SELECT student_id FROM students WHERE student_id = ?', [studentId]);
-    if (!student) {
-      return res.status(400).json({ error: 'Invalid student ID' });
-    }
-
-    // Find violation by name
-    const violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
+    // Find or create violation
+    let violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
     if (!violation) {
-      return res.status(400).json({ error: 'Invalid violation type' });
+      const defaultCategory = severity || 'Category 1 Offense';
+      const insertResult = await runQuery(
+        'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
+        [type, defaultCategory, description || 'Auto-created from incident update']
+      );
+      violation = { id: insertResult.insertId };
     }
 
-    await runQuery(
-      `UPDATE disciplinary_cases SET
-       student_id = ?, violation_id = ?, date_reported = ?, case_status = ?
-       WHERE case_id = ?`,
-      [studentId, violation.id, date, status || 'Pending', req.params.id]
+    const reportedById = reportedBy || req.user?.id || null;
+
+    const result = await runQuery(
+      'UPDATE disciplinary_cases SET student_id = ?, violation_id = ?, reported_by = ?, date_reported = ?, case_status = ? WHERE case_id = ?',
+      [studentId, violation.id, reportedById, date, status, id]
     );
 
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    // Get the updated record with joined data
     const updatedRecord = await getRow(`
       SELECT dc.case_id as id,
              dc.student_id,
@@ -236,7 +230,7 @@ router.put('/:id', verifyToken, async (req, res) => {
              s.course as grade,
              s.year_level,
              v.violation_name as type,
-             v.severity_level as severity,
+             v.category as severity,
              v.description,
              u.full_name as reportedByName
       FROM disciplinary_cases dc
@@ -265,26 +259,22 @@ router.put('/:id', verifyToken, async (req, res) => {
     res.json(transformedRecord);
   } catch (error) {
     console.error('Error updating disciplinary case:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to update disciplinary case' });
   }
 });
 
 // Delete disciplinary case
 router.delete('/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+
   try {
-    // Check if record exists
-    const record = await getRow('SELECT case_id FROM disciplinary_cases WHERE case_id = ?', [req.params.id]);
-    if (!record) {
-      return res.status(404).json({ error: 'Disciplinary case not found' });
+    const result = await runQuery('DELETE FROM disciplinary_cases WHERE case_id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Delete sanctions first
-    await runQuery('DELETE FROM sanctions WHERE record_id = ?', [req.params.id]);
-
-    // Delete record
-    await runQuery('DELETE FROM disciplinary_cases WHERE case_id = ?', [req.params.id]);
-
-    res.json({ message: 'Disciplinary case deleted successfully' });
+    res.json({ message: 'Case deleted successfully' });
   } catch (error) {
     console.error('Error deleting disciplinary case:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -294,7 +284,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 // Get violations list
 router.get('/violations/list', verifyToken, async (req, res) => {
   try {
-    const violations = await getAllRows('SELECT violation_id as id, violation_name as name, category, severity_level as severity, description FROM violations ORDER BY violation_name');
+    const violations = await getAllRows('SELECT violation_id as id, violation_name as name, category as severity, description FROM violations ORDER BY violation_name');
     res.json(violations);
   } catch (error) {
     console.error('Error fetching violations:', error);

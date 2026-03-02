@@ -33,7 +33,7 @@ export type IncidentType =
   | "Sexual Harassment"
   | "Other";
 
-export type Severity = "Minor" | "Major";
+export type Severity = "Category 1 Offense" | "Category 2 Offense" | "Category 3 Offense";
 export type ViolationCategory = "Uniform & Grooming" | "Behavior" | "Classroom Conduct" | "Academic" | "Attendance" | "Property" | "Safety";
 export type Status = "Open" | "Resolved" | "Under Review" | "Pending" | "Dismissed";
 

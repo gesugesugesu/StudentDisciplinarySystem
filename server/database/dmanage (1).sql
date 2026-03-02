@@ -150,7 +150,6 @@ CREATE TABLE `violations` (
   `violation_id` int(11) NOT NULL,
   `violation_name` varchar(100) NOT NULL,
   `category` varchar(50) DEFAULT NULL,
-  `severity_level` enum('Minor','Major','Severe') NOT NULL,
   `description` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
