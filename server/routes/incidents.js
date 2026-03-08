@@ -39,6 +39,7 @@ router.get('/', verifyToken, async (req, res) => {
       type: record.type,
       severity: record.severity,
       description: record.description,
+      actionTaken: '',
       status: record.status || 'Pending',
       reportedBy: record.reportedByName || 'Unknown',
       date: record.date,
@@ -90,6 +91,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       type: record.type,
       severity: record.severity,
       description: record.description,
+      actionTaken: '',
       status: record.status || 'Pending',
       reportedBy: record.reportedByName || 'Unknown',
       date: record.date,
@@ -169,6 +171,7 @@ router.post('/', verifyToken, async (req, res) => {
       type: newRecord.type,
       severity: newRecord.severity,
       description: newRecord.description,
+      actionTaken: newRecord.action_taken || '',
       status: newRecord.status || 'Pending',
       reportedBy: newRecord.reportedByName || 'Unknown',
       date: newRecord.date,
@@ -184,7 +187,7 @@ router.post('/', verifyToken, async (req, res) => {
 
 // Update disciplinary case
 router.put('/:id', verifyToken, async (req, res) => {
-  const { studentId, type, severity, date, description, status, reportedBy } = req.body;
+  const { studentId, type, severity, date, description, status, reportedBy, actionTaken } = req.body;
   const { id } = req.params;
 
   try {
@@ -208,10 +211,39 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     const reportedById = reportedBy || req.user?.id || null;
 
+    // Update the case (without action_taken for now - column doesn't exist in DB)
     const result = await runQuery(
       'UPDATE disciplinary_cases SET student_id = ?, violation_id = ?, reported_by = ?, date_reported = ?, case_status = ? WHERE case_id = ?',
-      [studentId, violation.id, reportedById, date, status, id]
+      [studentId ? parseInt(studentId) : null, violation.id, reportedById ? parseInt(reportedById) : null, date, status, id]
     );
+
+    // If status is Resolved, also add the record to disciplinary_records
+    if (status === 'Resolved') {
+      try {
+        // Check if a record already exists for this case
+        const existingRecord = await getRow(
+          'SELECT record_id FROM disciplinary_records WHERE student_id = ? AND violation_id = ? AND date_reported = ?',
+          [studentId, violation.id, date]
+        );
+        
+        if (!existingRecord) {
+          // Create a new disciplinary record
+          await runQuery(
+            'INSERT INTO disciplinary_records (student_id, violation_id, reported_by, date_reported, status) VALUES (?, ?, ?, ?, ?)',
+            [studentId, violation.id, reportedById, date, 'Resolved']
+          );
+        } else {
+          // Update existing record status to Resolved
+          await runQuery(
+            'UPDATE disciplinary_records SET status = ? WHERE record_id = ?',
+            ['Resolved', existingRecord.record_id]
+          );
+        }
+      } catch (e) {
+        // Ignore errors in disciplinary_records sync
+        console.error('Error syncing to disciplinary_records:', e);
+      }
+    }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Case not found' });
@@ -250,6 +282,7 @@ router.put('/:id', verifyToken, async (req, res) => {
       type: updatedRecord.type,
       severity: updatedRecord.severity,
       description: updatedRecord.description,
+      actionTaken: '',
       status: updatedRecord.status || 'Pending',
       reportedBy: updatedRecord.reportedByName || 'Unknown',
       date: updatedRecord.date,

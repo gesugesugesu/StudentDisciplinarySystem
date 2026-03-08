@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Incident, IncidentType, Severity, Status } from "../types";
+import { Incident, Severity, Status, Violation } from "../types";
 
 interface EditIncidentDialogProps {
   open: boolean;
@@ -14,93 +14,59 @@ interface EditIncidentDialogProps {
   incident: Incident;
 }
 
-const incidentTypes: IncidentType[] = [
-  "Tardiness",
-  "Loitering",
-  "Incomplete Uniform",
-  "Improper Uniform",
-  "Wearing Earrings (Male)",
-  "Excessive Jewelry",
-  "Colored Hair",
-  "Tattoos",
-  "Body Piercing",
-  "Chewing Gum/Eating in Class",
-  "Using Mobile Phone Without Permission",
-  "Sleeping in Class",
-  "Not Wearing ID",
-  "Not Bringing School Materials",
-  "Late Submission of Assignments",
-  "Improper Haircut",
-  "Cutting Classes",
-  "Leaving School Without Permission",
-  "Disrespect to Teachers/Staff/Students",
-  "Cheating in Examinations/Quizzes",
-  "Plagiarism",
-  "Forgery",
-  "Vandalism",
-  "Bullying",
-  "Physical Assault",
-  "Possession of Dangerous Weapons",
-  "Possession/Use of Illegal Drugs",
-  "Possession/Use of Alcoholic Beverages",
-  "Smoking Within School Premises",
-  "Theft",
-  "Gambling",
-  "Sexual Harassment",
-  "Other"
-];
-
-const severities: Severity[] = ["Category 1 Offense", "Category 2 Offense", "Category 3 Offense"];
-
-// Mapping of incident types to their severity levels
-const incidentSeverityMap: Record<IncidentType, Severity> = {
-  "Tardiness": "Category 1 Offense",
-  "Loitering": "Category 1 Offense",
-  "Incomplete Uniform": "Category 1 Offense",
-  "Improper Uniform": "Category 1 Offense",
-  "Wearing Earrings (Male)": "Category 1 Offense",
-  "Excessive Jewelry": "Category 1 Offense",
-  "Colored Hair": "Category 1 Offense",
-  "Tattoos": "Category 1 Offense",
-  "Body Piercing": "Category 1 Offense",
-  "Chewing Gum/Eating in Class": "Category 1 Offense",
-  "Using Mobile Phone Without Permission": "Category 1 Offense",
-  "Sleeping in Class": "Category 1 Offense",
-  "Not Wearing ID": "Category 1 Offense",
-  "Not Bringing School Materials": "Category 1 Offense",
-  "Late Submission of Assignments": "Category 1 Offense",
-  "Improper Haircut": "Category 1 Offense",
-  "Cutting Classes": "Category 2 Offense",
-  "Leaving School Without Permission": "Category 2 Offense",
-  "Disrespect to Teachers/Staff/Students": "Category 2 Offense",
-  "Cheating in Examinations/Quizzes": "Category 2 Offense",
-  "Plagiarism": "Category 2 Offense",
-  "Forgery": "Category 2 Offense",
-  "Vandalism": "Category 2 Offense",
-  "Bullying": "Category 2 Offense",
-  "Physical Assault": "Category 3 Offense",
-  "Possession of Dangerous Weapons": "Category 3 Offense",
-  "Possession/Use of Illegal Drugs": "Category 3 Offense",
-  "Possession/Use of Alcoholic Beverages": "Category 3 Offense",
-  "Smoking Within School Premises": "Category 3 Offense",
-  "Theft": "Category 3 Offense",
-  "Gambling": "Category 3 Offense",
-  "Sexual Harassment": "Category 3 Offense",
-  "Other": "Category 1 Offense"
-};
-const statuses: Status[] = ["Open", "Under Review", "Resolved"];
-
 export function EditIncidentDialog({
   open,
   onOpenChange,
   onEditIncident,
   incident,
 }: EditIncidentDialogProps) {
+  const [violations, setViolations] = useState<Violation[]>([]);
+  const [sanctionTypes, setSanctionTypes] = useState<{sanction_type_id: number; sanction_name: string; category: string}[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<Incident>(incident);
+
+  const API_BASE = 'http://localhost:5000/api';
+
+  useEffect(() => {
+    fetchViolations();
+    fetchSanctionTypes();
+  }, []);
 
   useEffect(() => {
     setFormData(incident);
   }, [incident]);
+
+  const fetchViolations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents/violations/list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setViolations(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch violations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSanctionTypes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/sanctions/types`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSanctionTypes(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch sanction types:', error);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,15 +76,33 @@ export function EditIncidentDialog({
 
   // Handle incident type change and automatically set severity
   const handleTypeChange = (value: string) => {
-    const selectedType = value as IncidentType;
-    const autoSeverity = incidentSeverityMap[selectedType];
+    const selectedViolation = violations.find(v => v.name === value);
     setFormData({
       ...formData,
-      type: selectedType,
-      severity: autoSeverity
+      type: value as any,
+      severity: selectedViolation?.severity || "Category 1 Offense"
     });
   };
-  
+
+  // Get sanctions based on category from API
+  const getSanctionsByCategory = (category: string) => {
+    // Map category format: "Category 1 Offense" -> "Category 1"
+    const categoryMap: Record<string, string> = {
+      "Category 1 Offense": "Category 1",
+      "Category 2 Offense": "Category 2",
+      "Category 3 Offense": "Category 3"
+    };
+    
+    const dbCategory = categoryMap[category] || category;
+    return sanctionTypes
+      .filter(s => s.category === dbCategory)
+      .map(s => s.sanction_name);
+  };
+
+  if (loading) {
+    return null;
+  }
+   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
@@ -127,7 +111,19 @@ export function EditIncidentDialog({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          {/* Student Display */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-student">Student</Label>
+            <Input
+              id="edit-student"
+              value={incident.studentName || ''}
+              disabled
+              className="bg-muted"
+            />
+          </div>
+          
+          {/* Incident Details Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-type">Incident Type</Label>
               <Select
@@ -135,12 +131,12 @@ export function EditIncidentDialog({
                 onValueChange={handleTypeChange}
               >
                 <SelectTrigger id="edit-type">
-                  <SelectValue />
+                  <SelectValue placeholder="Select violation" />
                 </SelectTrigger>
-                <SelectContent>
-                  {incidentTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                <SelectContent className="max-h-60">
+                  {violations.map((violation) => (
+                    <SelectItem key={violation.id} value={violation.name}>
+                      {violation.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -148,8 +144,8 @@ export function EditIncidentDialog({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="edit-severity">Severity</Label>
-              <Select
+              <Label htmlFor="edit-severity">Category</Label>
+              <Select 
                 value={formData.severity}
                 onValueChange={(value: string) => setFormData({ ...formData, severity: value as Severity })}
               >
@@ -157,17 +153,13 @@ export function EditIncidentDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {severities.map((severity) => (
-                    <SelectItem key={severity} value={severity}>
-                      {severity}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Category 1 Offense">Category 1 Offense</SelectItem>
+                  <SelectItem value="Category 2 Offense">Category 2 Offense</SelectItem>
+                  <SelectItem value="Category 3 Offense">Category 3 Offense</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+
             <div className="space-y-2">
               <Label htmlFor="edit-date">Date</Label>
               <Input
@@ -178,7 +170,10 @@ export function EditIncidentDialog({
                 required
               />
             </div>
-            
+          </div>
+          
+          {/* Status Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-status">Status</Label>
               <Select
@@ -189,48 +184,61 @@ export function EditIncidentDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Under Review">Under Review</SelectItem>
+                  <SelectItem value="Resolved">Resolved</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-reported">Reported By</Label>
+              <Input
+                id="edit-reported"
+                value={formData.reportedBy}
+                onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
+                required
+              />
+            </div>
           </div>
           
+          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="edit-description">Description</Label>
             <Textarea
               id="edit-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe the incident in detail..."
               required
               rows={3}
             />
           </div>
-          
+
+          {/* Sanction Section */}
           <div className="space-y-2">
-            <Label htmlFor="edit-action">Action Taken</Label>
-            <Textarea
-              id="edit-action"
-              value={formData.actionTaken}
-              onChange={(e) => setFormData({ ...formData, actionTaken: e.target.value })}
-              required
-              rows={3}
-            />
+            <Label htmlFor="edit-sanction">Assign Sanction</Label>
+            <Select
+              value={formData.actionTaken || "none"}
+              onValueChange={(value: string) => setFormData({ ...formData, actionTaken: value === "none" ? "" : value })}
+            >
+              <SelectTrigger id="edit-sanction">
+                <SelectValue placeholder="Select sanction (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Sanction</SelectItem>
+                {getSanctionsByCategory(formData.severity).map((sanction) => (
+                  <SelectItem key={sanction} value={sanction}>
+                    {sanction}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Available sanctions for {formData.severity}
+            </p>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="edit-reported">Reported By</Label>
-            <Input
-              id="edit-reported"
-              value={formData.reportedBy}
-              onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
-              required
-            />
-          </div>
-          
+           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

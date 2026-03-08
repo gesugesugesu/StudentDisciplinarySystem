@@ -4,6 +4,60 @@ const { verifyToken } = require('./auth');
 
 const router = express.Router();
 
+// Get all sanction types
+router.get('/types', verifyToken, async (req, res) => {
+  try {
+    // First check if sanction_types table exists, if not create it
+    try {
+      await runQuery(`
+        CREATE TABLE IF NOT EXISTS sanction_types (
+          sanction_type_id INT AUTO_INCREMENT PRIMARY KEY,
+          sanction_name VARCHAR(100) NOT NULL,
+          category VARCHAR(50) NOT NULL
+        )
+      `);
+      
+      // Check if table is empty, if so insert default values
+      const count = await getRow('SELECT COUNT(*) as count FROM sanction_types');
+      if (count.count === 0) {
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Verbal Warning', 'Category 1')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Written Warning', 'Category 1')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Counseling', 'Category 1')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Parent Conference', 'Category 1')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Community Service', 'Category 1')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Detention', 'Category 1')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Suspension', 'Category 2')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Restriction', 'Category 2')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Restitution', 'Category 2')`);
+        await runQuery(`INSERT INTO sanction_types (sanction_name, category) VALUES ('Expulsion', 'Category 3')`);
+      }
+    } catch (e) {
+      // Table may already exist, continue
+    }
+    
+    const sanctionTypes = await getAllRows('SELECT * FROM sanction_types ORDER BY sanction_type_id');
+    res.json(sanctionTypes);
+  } catch (error) {
+    console.error('Error fetching sanction types:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get sanction types by category
+router.get('/types/:category', verifyToken, async (req, res) => {
+  try {
+    const { category } = req.params;
+    const sanctionTypes = await getAllRows(
+      'SELECT * FROM sanction_types WHERE category = ? ORDER BY sanction_type_id',
+      [category]
+    );
+    res.json(sanctionTypes);
+  } catch (error) {
+    console.error('Error fetching sanction types:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all sanctions
 router.get('/', verifyToken, async (req, res) => {
   try {

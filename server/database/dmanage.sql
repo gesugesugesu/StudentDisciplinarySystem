@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 12, 2026 at 11:33 AM
+-- Generation Time: Mar 02, 2026 at 02:22 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,7 +46,8 @@ CREATE TABLE `disciplinary_cases` (
   `violation_id` int(11) NOT NULL,
   `reported_by` int(11) NOT NULL COMMENT 'Guidance Officer or Admin user_id',
   `date_reported` date NOT NULL,
-  `case_status` enum('Pending','Resolved') DEFAULT 'Pending'
+  `case_status` enum('Pending','Resolved') DEFAULT 'Pending',
+  `action_taken` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -88,6 +89,20 @@ CREATE TABLE `sanctions` (
   `description` text DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sanction_types`
+--
+
+CREATE TABLE `sanction_types` (
+  `sanction_type_id` int(11) NOT NULL,
+  `sanction_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -153,17 +168,6 @@ CREATE TABLE `violations` (
   `description` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `violation_categories`
---
-
-CREATE TABLE `violation_categories` (
-  `category_id` int(11) NOT NULL,
-  `category_name` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 --
 -- Indexes for dumped tables
 --
@@ -208,6 +212,12 @@ ALTER TABLE `sanctions`
   ADD KEY `fk_sanction_record` (`record_id`);
 
 --
+-- Indexes for table `sanction_types`
+--
+ALTER TABLE `sanction_types`
+  ADD PRIMARY KEY (`sanction_type_id`);
+
+--
 -- Indexes for table `students`
 --
 ALTER TABLE `students`
@@ -232,12 +242,6 @@ ALTER TABLE `users`
 ALTER TABLE `violations`
   ADD PRIMARY KEY (`violation_id`),
   ADD KEY `idx_violation_name` (`violation_name`);
-
---
--- Indexes for table `violation_categories`
---
-ALTER TABLE `violation_categories`
-  ADD PRIMARY KEY (`category_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -274,6 +278,12 @@ ALTER TABLE `sanctions`
   MODIFY `sanction_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `sanction_types`
+--
+ALTER TABLE `sanction_types`
+  MODIFY `sanction_type_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `students`
 --
 ALTER TABLE `students`
@@ -296,12 +306,6 @@ ALTER TABLE `users`
 --
 ALTER TABLE `violations`
   MODIFY `violation_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `violation_categories`
---
-ALTER TABLE `violation_categories`
-  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

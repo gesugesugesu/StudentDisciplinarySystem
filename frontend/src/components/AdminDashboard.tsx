@@ -14,6 +14,7 @@ import { User, UserRole, UserStatus, Incident } from "../types";
 import { toast } from "sonner";
 import { AddUsersDialog } from "./AddUsersDialog";
 import { ViolationManagement } from "./ViolationManagement";
+import { EditIncidentDialog } from "./EditIncidentDialog";
 import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare } from "lucide-react";
 
 export function AdminDashboard() {
@@ -24,6 +25,8 @@ export function AdminDashboard() {
   const [viewUser, setViewUser] = useState<User | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [viewIncident, setViewIncident] = useState<Incident | null>(null);
+  const [editIncident, setEditIncident] = useState<Incident | null>(null);
+  const [isEditIncidentDialogOpen, setIsEditIncidentDialogOpen] = useState(false);
   const [viewStudentRecord, setViewStudentRecord] = useState<Incident | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -246,6 +249,41 @@ export function AdminDashboard() {
   const handleViewIncident = (incident: Incident) => {
     setViewIncident(incident);
     setIsViewIncidentDialogOpen(true);
+  };
+
+  const handleEditIncidentClick = (incident: Incident) => {
+    setEditIncident(incident);
+    setIsEditIncidentDialogOpen(true);
+  };
+
+  const handleSaveEditIncident = async (updatedIncident: Incident) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents/${updatedIncident.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: updatedIncident.type,
+          severity: updatedIncident.severity,
+          date: updatedIncident.date,
+          description: updatedIncident.description,
+          status: updatedIncident.status,
+          reportedBy: updatedIncident.reportedBy
+        })
+      });
+      if (response.ok) {
+        toast.success('Incident updated successfully');
+        fetchIncidents();
+        setIsEditIncidentDialogOpen(false);
+      } else {
+        toast.error('Failed to update incident');
+      }
+    } catch (error) {
+      toast.error('Error updating incident');
+    }
   };
 
   const handleViewStudentRecord = (record: Incident) => {
@@ -619,7 +657,7 @@ export function AdminDashboard() {
                   <TableRow>
                     <TableHead>Student</TableHead>
                     <TableHead>Violation Type</TableHead>
-                    <TableHead>Severity</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Reported By</TableHead>
                     <TableHead>Actions</TableHead>
@@ -633,7 +671,7 @@ export function AdminDashboard() {
                       </TableCell>
                       <TableCell>{incident.type}</TableCell>
                       <TableCell>
-                        <Badge variant={incident.severity === 'Major' ? 'destructive' : 'secondary'}>
+                        <Badge variant={incident.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
                           {incident.severity}
                         </Badge>
                       </TableCell>
@@ -648,6 +686,14 @@ export function AdminDashboard() {
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditIncidentClick(incident)}
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Edit
                           </Button>
                           <Button
                             size="sm"
@@ -679,7 +725,7 @@ export function AdminDashboard() {
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-1/6">Student</TableHead>
                   <TableHead className="w-1/6">Violation Type</TableHead>
-                  <TableHead className="w-1/8">Severity</TableHead>
+                  <TableHead className="w-1/8">Category</TableHead>
                   <TableHead className="w-1/8">Status</TableHead>
                   <TableHead className="w-1/8">Date</TableHead>
                   <TableHead className="w-1/6">Reported By</TableHead>
@@ -694,7 +740,7 @@ export function AdminDashboard() {
                     </TableCell>
                     <TableCell className="truncate max-w-[150px]">{incident.type}</TableCell>
                     <TableCell>
-                      <Badge variant={incident.severity === 'Major' ? 'destructive' : 'secondary'}>
+                      <Badge variant={incident.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
                         {incident.severity}
                       </Badge>
                     </TableCell>
@@ -710,13 +756,22 @@ export function AdminDashboard() {
                     <TableCell>{new Date(incident.date).toLocaleDateString()}</TableCell>
                     <TableCell className="truncate max-w-[120px]">{incident.reportedBy}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleViewIncident(incident)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewIncident(incident)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditIncidentClick(incident)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -767,7 +822,7 @@ export function AdminDashboard() {
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-1/6">Student</TableHead>
                   <TableHead className="w-1/6">Violation Type</TableHead>
-                  <TableHead className="w-1/8">Severity</TableHead>
+                  <TableHead className="w-1/8">Category</TableHead>
                   <TableHead className="w-1/8">Status</TableHead>
                   <TableHead className="w-1/8">Date</TableHead>
                   <TableHead className="w-1/6">Reported By</TableHead>
@@ -782,7 +837,7 @@ export function AdminDashboard() {
                     </TableCell>
                     <TableCell className="truncate max-w-[150px]">{record.type}</TableCell>
                     <TableCell>
-                      <Badge variant={record.severity === 'Major' ? 'destructive' : 'secondary'}>
+                      <Badge variant={record.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
                         {record.severity}
                       </Badge>
                     </TableCell>
@@ -1073,9 +1128,9 @@ export function AdminDashboard() {
                   <p className="text-sm text-muted-foreground">{viewIncident.type}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Severity</label>
+                  <label className="text-sm font-medium">Category</label>
                   <p className="text-sm text-muted-foreground">
-                    <Badge variant={viewIncident.severity === 'Major' ? 'destructive' : 'secondary'}>
+                    <Badge variant={viewIncident.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
                       {viewIncident.severity}
                     </Badge>
                   </p>
@@ -1108,6 +1163,16 @@ export function AdminDashboard() {
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setIsViewIncidentDialogOpen(false)}>
                   Close
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewIncidentDialogOpen(false);
+                    handleEditIncidentClick(viewIncident);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
                 </Button>
                 {viewIncident.status === 'Open' && (
                   <Button 
@@ -1145,9 +1210,9 @@ export function AdminDashboard() {
                   <p className="text-sm text-muted-foreground">{viewStudentRecord.type}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Severity</label>
+                  <label className="text-sm font-medium">Category</label>
                   <p className="text-sm text-muted-foreground">
-                    <Badge variant={viewStudentRecord.severity === 'Major' ? 'destructive' : 'secondary'}>
+                    <Badge variant={viewStudentRecord.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
                       {viewStudentRecord.severity}
                     </Badge>
                   </p>
@@ -1195,6 +1260,16 @@ export function AdminDashboard() {
           fetchUsers();
         }}
       />
+
+      {/* Edit Incident Dialog */}
+      {editIncident && (
+        <EditIncidentDialog
+          open={isEditIncidentDialogOpen}
+          onOpenChange={setIsEditIncidentDialogOpen}
+          onEditIncident={handleSaveEditIncident}
+          incident={editIncident}
+        />
+      )}
     </div>
   );
 }

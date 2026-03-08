@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Incident, IncidentType, Severity, Status, Student } from "../types";
+import { Incident, Severity, Status, Student, Violation } from "../types";
 
 interface AddIncidentDialogProps {
   open: boolean;
@@ -22,9 +22,11 @@ export function AddIncidentDialog({
   students,
   preselectedStudentId 
 }: AddIncidentDialogProps) {
+  const [violations, setViolations] = useState<Violation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     studentId: preselectedStudentId || "",
-    type: "Tardiness" as IncidentType,
+    type: "" as string,
     severity: "Category 1 Offense" as Severity,
     date: new Date().toISOString().split('T')[0],
     description: "",
@@ -33,106 +35,71 @@ export function AddIncidentDialog({
     reportedBy: "",
   });
   
+  const API_BASE = 'http://localhost:5000/api';
+
+  useEffect(() => {
+    fetchIncidentTypes();
+  }, []);
+
+  const fetchIncidentTypes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents/violations/list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setViolations(data);
+        // Set default type to first violation
+        if (data.length > 0 && !formData.type) {
+          setFormData(prev => ({
+            ...prev,
+            type: data[0].name,
+            severity: data[0].severity
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch incident types:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddIncident(formData);
-    onOpenChange(false);
+    onAddIncident({
+      ...formData,
+      type: formData.type as any,
+    });
+    // Reset form
     setFormData({
       studentId: preselectedStudentId || "",
-      type: "Tardiness",
-      severity: "Category 1 Offense",
+      type: violations[0]?.name || "",
+      severity: violations[0]?.severity || "Category 1 Offense",
       date: new Date().toISOString().split('T')[0],
       description: "",
       actionTaken: "",
       status: "Open",
       reportedBy: "",
     });
-  };
-  
-  const incidentTypes: IncidentType[] = [
-    "Tardiness",
-    "Loitering",
-    "Incomplete Uniform",
-    "Improper Uniform",
-    "Wearing Earrings (Male)",
-    "Excessive Jewelry",
-    "Colored Hair",
-    "Tattoos",
-    "Body Piercing",
-    "Chewing Gum/Eating in Class",
-    "Using Mobile Phone Without Permission",
-    "Sleeping in Class",
-    "Not Wearing ID",
-    "Not Bringing School Materials",
-    "Late Submission of Assignments",
-    "Improper Haircut",
-    "Cutting Classes",
-    "Leaving School Without Permission",
-    "Disrespect to Teachers/Staff/Students",
-    "Cheating in Examinations/Quizzes",
-    "Plagiarism",
-    "Forgery",
-    "Vandalism",
-    "Bullying",
-    "Physical Assault",
-    "Possession of Dangerous Weapons",
-    "Possession/Use of Illegal Drugs",
-    "Possession/Use of Alcoholic Beverages",
-    "Smoking Within School Premises",
-    "Theft",
-    "Gambling",
-    "Sexual Harassment",
-    "Other"
-  ];
-
-  // Mapping of incident types to their severity levels
-  const incidentSeverityMap: Record<IncidentType, Severity> = {
-    "Tardiness": "Category 1 Offense",
-    "Loitering": "Category 1 Offense",
-    "Incomplete Uniform": "Category 1 Offense",
-    "Improper Uniform": "Category 1 Offense",
-    "Wearing Earrings (Male)": "Category 1 Offense",
-    "Excessive Jewelry": "Category 1 Offense",
-    "Colored Hair": "Category 1 Offense",
-    "Tattoos": "Category 1 Offense",
-    "Body Piercing": "Category 1 Offense",
-    "Chewing Gum/Eating in Class": "Category 1 Offense",
-    "Using Mobile Phone Without Permission": "Category 1 Offense",
-    "Sleeping in Class": "Category 1 Offense",
-    "Not Wearing ID": "Category 1 Offense",
-    "Not Bringing School Materials": "Category 1 Offense",
-    "Late Submission of Assignments": "Category 1 Offense",
-    "Improper Haircut": "Category 1 Offense",
-    "Cutting Classes": "Category 2 Offense",
-    "Leaving School Without Permission": "Category 2 Offense",
-    "Disrespect to Teachers/Staff/Students": "Category 2 Offense",
-    "Cheating in Examinations/Quizzes": "Category 2 Offense",
-    "Plagiarism": "Category 2 Offense",
-    "Forgery": "Category 2 Offense",
-    "Vandalism": "Category 2 Offense",
-    "Bullying": "Category 2 Offense",
-    "Physical Assault": "Category 3 Offense",
-    "Possession of Dangerous Weapons": "Category 3 Offense",
-    "Possession/Use of Illegal Drugs": "Category 3 Offense",
-    "Possession/Use of Alcoholic Beverages": "Category 3 Offense",
-    "Smoking Within School Premises": "Category 3 Offense",
-    "Theft": "Category 3 Offense",
-    "Gambling": "Category 3 Offense",
-    "Sexual Harassment": "Category 3 Offense",
-    "Other": "Category 1 Offense"
+    onOpenChange(false);
   };
 
   // Handle incident type change and automatically set severity
   const handleTypeChange = (value: string) => {
-    const selectedType = value as IncidentType;
-    const autoSeverity = incidentSeverityMap[selectedType];
+    const selectedViolation = violations.find(v => v.name === value);
     setFormData({
       ...formData,
-      type: selectedType,
-      severity: autoSeverity
+      type: value,
+      severity: selectedViolation?.severity || "Category 1 Offense"
     });
   };
-  
+
+  if (loading) {
+    return null;
+  }
+   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
@@ -141,6 +108,7 @@ export function AddIncidentDialog({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Student Selection */}
           <div className="space-y-2">
             <Label htmlFor="student">Student</Label>
             <Select
@@ -161,7 +129,8 @@ export function AddIncidentDialog({
             </Select>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          {/* Incident Details Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">Incident Type</Label>
               <Select
@@ -169,12 +138,12 @@ export function AddIncidentDialog({
                 onValueChange={handleTypeChange}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select violation" />
                 </SelectTrigger>
-                <SelectContent>
-                  {incidentTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                <SelectContent className="max-h-60">
+                  {violations.map((violation) => (
+                    <SelectItem key={violation.id} value={violation.name}>
+                      {violation.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -197,9 +166,7 @@ export function AddIncidentDialog({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input
@@ -210,7 +177,10 @@ export function AddIncidentDialog({
                 required
               />
             </div>
-            
+          </div>
+          
+          {/* Status Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -227,40 +197,29 @@ export function AddIncidentDialog({
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="reportedBy">Reported By</Label>
+              <Input
+                id="reportedBy"
+                value={formData.reportedBy}
+                onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
+                placeholder="Staff member name"
+                required
+              />
+            </div>
           </div>
           
+          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe the incident..."
+              placeholder="Describe the incident in detail..."
               required
               rows={3}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="actionTaken">Action Taken</Label>
-            <Textarea
-              id="actionTaken"
-              value={formData.actionTaken}
-              onChange={(e) => setFormData({ ...formData, actionTaken: e.target.value })}
-              placeholder="Describe the action taken..."
-              required
-              rows={3}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="reportedBy">Reported By</Label>
-            <Input
-              id="reportedBy"
-              value={formData.reportedBy}
-              onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
-              placeholder="Staff member name"
-              required
             />
           </div>
           

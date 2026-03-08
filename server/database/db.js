@@ -194,8 +194,8 @@ async function ensureDefaultData() {
 
     if (violationRows.length === 0) {
       await pool.execute(
-        'INSERT INTO violations (violation_name, category, severity_level, description) VALUES (?, ?, ?, ?)',
-        ['Late Attendance', 'Attendance', 'Minor', 'Student arrived late to class']
+        'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
+        ['Late Attendance', 'Attendance', 'Student arrived late to class']
       );
 
       console.log('Default violation added');
