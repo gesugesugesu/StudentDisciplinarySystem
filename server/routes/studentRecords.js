@@ -4,6 +4,93 @@ const { verifyToken } = require('./auth');
 
 const router = express.Router();
 
+// Search offenses/violations by name (partial match)
+router.get('/search-offenses', verifyToken, async (req, res) => {
+  const { query } = req.query;
+  
+  if (!query) {
+    return res.json([]);
+  }
+  
+  try {
+    const searchPattern = `%${query}%`;
+    const offenses = await getAllRows(
+      `SELECT violation_id as id, violation_name as name, category as severity, description 
+       FROM violations 
+       WHERE violation_name LIKE ? 
+       ORDER BY violation_name ASC 
+       LIMIT 20`,
+      [searchPattern]
+    );
+    res.json(offenses);
+  } catch (error) {
+    console.error('Error searching offenses:', error);
+    res.status(500).json({ error: 'Failed to search offenses' });
+  }
+});
+
+// Get students by offense/violation
+router.get('/by-offense/:violationId', verifyToken, async (req, res) => {
+  const { violationId } = req.params;
+  const { sort = 'date_desc' } = req.query;
+  
+  try {
+    let orderClause = 'ORDER BY dr.date_reported DESC';
+    if (sort === 'date_asc') {
+      orderClause = 'ORDER BY dr.date_reported ASC';
+    }
+    
+    const query = `
+      SELECT dr.record_id as id,
+             dr.student_id,
+             dr.violation_id,
+             dr.reported_by,
+             dr.date_reported as date,
+             dr.status,
+             s.first_name,
+             s.last_name,
+             s.student_id as studentIdNumber,
+             s.course as grade,
+             s.year_level,
+             v.violation_name as type,
+             v.category as offenseCategory,
+             v.description,
+             u.full_name as reportedByName
+      FROM disciplinary_records dr
+      LEFT JOIN students s ON dr.student_id = s.student_id
+      LEFT JOIN violations v ON dr.violation_id = v.violation_id
+      LEFT JOIN users u ON dr.reported_by = u.user_id
+      WHERE dr.violation_id = ?
+      ${orderClause}
+    `;
+    
+    const records = await getAllRows(query, [violationId]);
+    
+    // Transform to match frontend expectations
+    const transformedRecords = records.map(record => ({
+      id: record.id.toString(),
+      studentId: record.student_id ? record.student_id.toString() : record.studentIdNumber?.toString() || '',
+      studentName: `${record.first_name || ''} ${record.last_name || ''}`.trim() || 'Unknown',
+      studentIdNumber: record.studentIdNumber ? record.studentIdNumber.toString() : '',
+      grade: record.grade || '',
+      class: record.year_level ? `Year ${record.year_level}` : '',
+      type: record.type,
+      offenseCategory: record.offenseCategory || 'Category 1 Offense',
+      severity: record.offenseCategory || 'Category 1 Offense',
+      description: record.description,
+      status: record.status || 'Pending',
+      reportedBy: record.reportedByName || 'Unknown',
+      date: record.date,
+      communicationLogs: []
+    }));
+
+    res.json(transformedRecords);
+  } catch (error) {
+    console.error('Error fetching students by offense:', error);
+    res.status(500).json({ error: 'Failed to fetch students by offense' });
+  }
+});
+
 // Get all disciplinary records with filters
 router.get('/', verifyToken, async (req, res) => {
   const { status, studentId, search } = req.query;

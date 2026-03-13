@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { AddUsersDialog } from "./AddUsersDialog";
 import { ViolationManagement } from "./ViolationManagement";
 import { EditIncidentDialog } from "./EditIncidentDialog";
-import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare } from "lucide-react";
+import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown } from "lucide-react";
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
@@ -46,6 +46,16 @@ export function AdminDashboard() {
   const [studentRecordsPage, setStudentRecordsPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Offense search state
+  const [offenseSearchQuery, setOffenseSearchQuery] = useState('');
+  const [offenseSearchResults, setOffenseSearchResults] = useState<{id: number; name: string; severity: string; description: string | null}[]>([]);
+  const [selectedOffense, setSelectedOffense] = useState<{id: number; name: string; severity: string} | null>(null);
+  const [studentsByOffense, setStudentsByOffense] = useState<Incident[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showOffenseSuggestions, setShowOffenseSuggestions] = useState(false);
+  const [offenseSortOrder, setOffenseSortOrder] = useState<'date_desc' | 'date_asc'>('date_desc');
+  const [offenseResultsPage, setOffenseResultsPage] = useState(1);
+
   const API_BASE = 'http://localhost:5000/api';
 
   useEffect(() => {
@@ -72,6 +82,90 @@ export function AdminDashboard() {
       }
     } catch (error) {
       toast.error('Failed to fetch student records');
+    }
+  };
+
+  // Search offenses by name (partial match)
+  const searchOffenses = async (query: string) => {
+    if (!query.trim()) {
+      setOffenseSearchResults([]);
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/student-records/search-offenses?query=${encodeURIComponent(query)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOffenseSearchResults(data);
+      }
+    } catch (error) {
+      console.error('Error searching offenses:', error);
+    }
+  };
+
+  // Fetch students by selected offense
+  const fetchStudentsByOffense = async (offenseId: number, sortOrder: 'date_desc' | 'date_asc' = 'date_desc') => {
+    setSearchLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/student-records/by-offense/${offenseId}?sort=${sortOrder}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStudentsByOffense(data);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch students by offense');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handle offense search input change
+  const handleOffenseSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setOffenseSearchQuery(query);
+    setSelectedOffense(null);
+    setStudentsByOffense([]);
+    setOffenseResultsPage(1);
+    
+    if (query.trim()) {
+      searchOffenses(query);
+      setShowOffenseSuggestions(true);
+    } else {
+      setOffenseSearchResults([]);
+      setShowOffenseSuggestions(false);
+    }
+  };
+
+  // Handle offense selection
+  const handleOffenseSelect = (offense: {id: number; name: string; severity: string}) => {
+    setSelectedOffense(offense);
+    setOffenseSearchQuery(offense.name);
+    setShowOffenseSuggestions(false);
+    setOffenseSearchResults([]);
+    fetchStudentsByOffense(offense.id, offenseSortOrder);
+  };
+
+  // Clear search
+  const clearOffenseSearch = () => {
+    setOffenseSearchQuery('');
+    setSelectedOffense(null);
+    setOffenseSearchResults([]);
+    setStudentsByOffense([]);
+    setShowOffenseSuggestions(false);
+    setOffenseResultsPage(1);
+  };
+
+  // Handle sort change
+  const handleOffenseSortChange = (newSortOrder: 'date_desc' | 'date_asc') => {
+    setOffenseSortOrder(newSortOrder);
+    if (selectedOffense) {
+      fetchStudentsByOffense(selectedOffense.id, newSortOrder);
     }
   };
 
@@ -402,6 +496,11 @@ export function AdminDashboard() {
   const studentRecordsTotalPages = Math.ceil(studentRecords.length / itemsPerPage);
   const studentRecordsStartIndex = (studentRecordsPage - 1) * itemsPerPage;
   const paginatedStudentRecords = studentRecords.slice(studentRecordsStartIndex, studentRecordsStartIndex + itemsPerPage);
+
+  // Pagination for offense search results
+  const offenseResultsTotalPages = Math.ceil(studentsByOffense.length / itemsPerPage);
+  const offenseResultsStartIndex = (offenseResultsPage - 1) * itemsPerPage;
+  const paginatedOffenseResults = studentsByOffense.slice(offenseResultsStartIndex, offenseResultsStartIndex + itemsPerPage);
 
   // Reset incidents page when incidents change
   useEffect(() => {
@@ -859,6 +958,181 @@ export function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="records" className="space-y-4">
+          {/* Offense Search Section */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Search Students by Offense</h3>
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                  <Input
+                    type="text"
+                    placeholder="Search for an offense (e.g., Bullying, Cheating)..."
+                    value={offenseSearchQuery}
+                    onChange={handleOffenseSearchChange}
+                    onFocus={() => offenseSearchQuery && setShowOffenseSuggestions(true)}
+                    className="pl-10 pr-4"
+                  />
+                </div>
+                {offenseSearchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearOffenseSearch}
+                    className="px-2"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Offense Suggestions Dropdown */}
+              {showOffenseSuggestions && offenseSearchResults.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                  {offenseSearchResults.map((offense) => (
+                    <div
+                      key={offense.id}
+                      className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
+                      onClick={() => handleOffenseSelect(offense)}
+                    >
+                      <div className="font-medium">{offense.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        <Badge variant={offense.severity === 'Category 3 Offense' ? 'destructive' : offense.severity === 'Category 2 Offense' ? 'secondary' : 'outline'}>
+                          {offense.severity}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Search Results Section */}
+          {selectedOffense && (
+            <Card className="overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Students with Offense: {selectedOffense.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {studentsByOffense.length} record(s) found
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOffenseSortChange(offenseSortOrder === 'date_desc' ? 'date_asc' : 'date_desc')}
+                  >
+                    <ArrowUpDown className="h-4 w-4 mr-1" />
+                    {offenseSortOrder === 'date_desc' ? 'Newest First' : 'Oldest First'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearOffenseSearch}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                </div>
+              </div>
+              
+              {searchLoading ? (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground">Loading...</p>
+                </div>
+              ) : studentsByOffense.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground">No records found for this offense.</p>
+                </div>
+              ) : (
+                <>
+                  <Table className="w-full">
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-1/6">Student Name</TableHead>
+                        <TableHead className="w-1/6">Student ID</TableHead>
+                        <TableHead className="w-1/6">Offense Name</TableHead>
+                        <TableHead className="w-1/8">Offense Category</TableHead>
+                        <TableHead className="w-1/8">Date Reported</TableHead>
+                        <TableHead className="w-1/8">Status</TableHead>
+                        <TableHead className="w-24 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedOffenseResults.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell className="font-medium">
+                            {record.studentName || record.studentId}
+                          </TableCell>
+                          <TableCell>{record.studentId}</TableCell>
+                          <TableCell>{record.type}</TableCell>
+                          <TableCell>
+                            <Badge variant={record.severity === 'Category 3 Offense' ? 'destructive' : record.severity === 'Category 2 Offense' ? 'secondary' : 'outline'}>
+                              {record.severity}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              record.status === 'Resolved' ? 'default' :
+                              record.status === 'Under Review' ? 'secondary' :
+                              record.status === 'Open' ? 'destructive' :
+                              'outline'
+                            }>
+                              {record.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleViewStudentRecord(record)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  
+                  {/* Pagination for Search Results */}
+                  {offenseResultsTotalPages > 1 && (
+                    <div className="flex items-center justify-between p-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {offenseResultsStartIndex + 1} to {Math.min(offenseResultsStartIndex + itemsPerPage, studentsByOffense.length)} of {studentsByOffense.length} records
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setOffenseResultsPage(offenseResultsPage - 1)}
+                          disabled={offenseResultsPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setOffenseResultsPage(offenseResultsPage + 1)}
+                          disabled={offenseResultsPage === offenseResultsTotalPages}
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </Card>
+          )}
+
           {/* All Student Records Section */}
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
