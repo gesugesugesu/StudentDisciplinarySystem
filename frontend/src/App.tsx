@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
@@ -68,6 +68,29 @@ export default function App() {
       console.error('Failed to fetch students:', error);
     }
   };
+
+  const fetchIncidents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/incidents', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIncidents(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch incidents:', error);
+    }
+  };
+
+  // Fetch incidents on mount if admin is already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && isAdminLoggedIn) {
+      fetchIncidents();
+    }
+  }, [isAdminLoggedIn]);
 
   const handleAdminLogin = (user: any) => {
     if (user.role === 'Student') {
@@ -144,6 +167,7 @@ export default function App() {
       setCurrentUserRole(user.role);
       setIsAdminLoggedIn(true);
       fetchStudents(); // Fetch database students for all admin users
+      fetchIncidents(); // Fetch incidents from database
       toast.success("Logged in successfully");
     }
   };
@@ -210,11 +234,13 @@ export default function App() {
     setIncidents(incidents.map(inc => 
       inc.id === updatedIncident.id ? updatedIncident : inc
     ));
+    fetchIncidents();
     toast.success("Incident updated successfully");
   };
   
   const handleDeleteIncident = (incidentId: string) => {
     setIncidents(incidents.filter(inc => inc.id !== incidentId));
+    fetchIncidents();
     toast.success("Incident deleted successfully");
   };
   

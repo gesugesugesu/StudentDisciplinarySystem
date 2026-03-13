@@ -144,6 +144,14 @@ async function ensureDefaultData() {
       // Column might not exist, ignore error
     }
 
+    // Update case_status enum to include Under Review and replace Open with Pending
+    try {
+      await pool.execute("ALTER TABLE disciplinary_cases MODIFY COLUMN case_status ENUM('Pending','Resolved','Under Review') DEFAULT 'Pending'");
+      console.log('Updated case_status enum to include Under Review');
+    } catch (error) {
+      // Column might already have the correct enum, ignore error
+    }
+
     // Check if old admin email exists and update to new one
     const [oldAdminRows] = await pool.execute(
       'SELECT user_id FROM users WHERE email = ?',

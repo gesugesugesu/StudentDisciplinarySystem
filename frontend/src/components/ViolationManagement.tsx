@@ -28,7 +28,7 @@ const category2Offenses = [
 const category3Offenses = [
   "Exam Misrepresentation", "Assault on Faculty","Theft/Attempted Theft","Assault on Student",,
   "Hazing Participation", "Presence at hazing","Hazing leadership liability","Off-campus misconduct",
-  "Moral turpitude", "Illegal organization membership", "Illegal Drugs possession/use", "Weapon possession/use"
+  "Moral turpitude", "Illegal organization membership", "Illegal Drugs possession/use", "Weapon possession/use" 
 ];
 
 function getAutoCategory(violationName: string): Severity {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { Search, MoreVertical, Edit, Trash2, Bell, Download } from "lucide-react";
+import { Search, MoreVertical, Edit, Trash2, Bell, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Incident, Student, Severity, Status } from "../types";
 import { format } from "date-fns";
 import { exportToCSV, exportToPDF, exportWeeklyReport, exportMonthlyReport } from "../utils/exportUtils";
@@ -49,11 +49,13 @@ export function AllIncidents({
   const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [incidentToDelete, setIncidentToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case "Severe": return "destructive";
-      case "Moderate": return "default";
+      case "Category 3 Offense": return "destructive";
+      case "Category 2 Offense": return "default";
       default: return "secondary";
     }
   };
@@ -78,6 +80,22 @@ export function AllIncidents({
     
     return matchesSearch && matchesSeverity && matchesStatus;
   });
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, severityFilter, statusFilter]);
+  
+  // Pagination
+  const totalPages = Math.ceil(filteredIncidents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedIncidents = filteredIncidents
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(startIndex, startIndex + itemsPerPage);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
   
   const handleDeleteClick = (incidentId: string) => {
     setIncidentToDelete(incidentId);
@@ -174,13 +192,13 @@ export function AllIncidents({
         
         <Select value={severityFilter} onValueChange={(value: string) => setSeverityFilter(value as Severity | "All")}>
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by severity" />
+            <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="All">All Severities</SelectItem>
-            <SelectItem value="Minor">Minor</SelectItem>
-            <SelectItem value="Moderate">Moderate</SelectItem>
-            <SelectItem value="Severe">Severe</SelectItem>
+            <SelectItem value="All">All Categories</SelectItem>
+            <SelectItem value="Category 1 Offense">Category 1 Offense</SelectItem>
+            <SelectItem value="Category 2 Offense">Category 2 Offense</SelectItem>
+            <SelectItem value="Category 3 Offense">Category 3 Offense</SelectItem>
           </SelectContent>
         </Select>
         
@@ -209,19 +227,17 @@ export function AllIncidents({
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reported By</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredIncidents.length === 0 ? (
+              {paginatedIncidents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No incidents found matching your filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredIncidents
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                paginatedIncidents
                   .map((incident) => {
                     const student = students.find(s => s.id === incident.studentId);
                     return (
@@ -248,32 +264,6 @@ export function AllIncidents({
                           </Badge>
                         </TableCell>
                         <TableCell>{incident.reportedBy}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => onEditIncident(incident)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => onNotifyParent(incident)}>
-                                <Bell className="h-4 w-4 mr-2" />
-                                Notify Parent
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteClick(incident.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -283,8 +273,33 @@ export function AllIncidents({
         </div>
       </Card>
       
-      <div className="text-muted-foreground">
-        Showing {filteredIncidents.length} of {incidents.length} incidents
+      <div className="flex items-center justify-between">
+        <div className="text-muted-foreground">
+          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredIncidents.length)} of {filteredIncidents.length} incidents
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages || 1}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

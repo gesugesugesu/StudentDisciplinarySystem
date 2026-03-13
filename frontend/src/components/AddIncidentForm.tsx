@@ -29,7 +29,7 @@ export function AddIncidentForm({
     date: new Date().toISOString().split('T')[0],
     description: "",
     actionTaken: "",
-    status: "Open" as Status,
+    status: "Pending" as Status,
     reportedBy: "",
   });
   
@@ -78,7 +78,7 @@ export function AddIncidentForm({
       date: new Date().toISOString().split('T')[0],
       description: "",
       actionTaken: "",
-      status: "Open",
+      status: "Pending",
       reportedBy: "",
     });
   };
@@ -264,7 +264,7 @@ export function AddIncidentForm({
                   date: new Date().toISOString().split('T')[0],
                   description: "",
                   actionTaken: "",
-                  status: "Open",
+                  status: "Pending",
                   reportedBy: "",
                 });
               }}>

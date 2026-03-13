@@ -46,7 +46,7 @@ CREATE TABLE `disciplinary_cases` (
   `violation_id` int(11) NOT NULL,
   `reported_by` int(11) NOT NULL COMMENT 'Guidance Officer or Admin user_id',
   `date_reported` date NOT NULL,
-  `case_status` enum('Pending','Resolved') DEFAULT 'Pending',
+  `case_status` enum('Pending','Resolved','Under Review') DEFAULT 'Pending',
   `action_taken` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

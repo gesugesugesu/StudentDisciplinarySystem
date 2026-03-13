@@ -42,6 +42,8 @@ export function AdminDashboard() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+  const [incidentsPage, setIncidentsPage] = useState(1);
+  const [studentRecordsPage, setStudentRecordsPage] = useState(1);
   const itemsPerPage = 10;
 
   const API_BASE = 'http://localhost:5000/api';
@@ -271,7 +273,8 @@ export function AdminDashboard() {
           date: updatedIncident.date,
           description: updatedIncident.description,
           status: updatedIncident.status,
-          reportedBy: updatedIncident.reportedBy
+          reportedBy: updatedIncident.reportedBy,
+          sanction: updatedIncident.actionTaken
         })
       });
       if (response.ok) {
@@ -387,9 +390,36 @@ export function AdminDashboard() {
   const suspendedCount = suspendedUsers.length;
   const pendingCount = pendingUsers.length;
 
-  // Incident Statistics
-  const totalIncidents = incidents.length;
-  const openIncidents = incidents.filter(i => i.status === 'Open').length;
+  // Filter out resolved incidents for the Incident Reports tab
+  const activeIncidents = incidents.filter(i => i.status !== 'Resolved');
+  
+  // Pagination for incidents
+  const incidentsTotalPages = Math.ceil(activeIncidents.length / itemsPerPage);
+  const incidentsStartIndex = (incidentsPage - 1) * itemsPerPage;
+  const paginatedIncidents = activeIncidents.slice(incidentsStartIndex, incidentsStartIndex + itemsPerPage);
+
+  // Pagination for student records
+  const studentRecordsTotalPages = Math.ceil(studentRecords.length / itemsPerPage);
+  const studentRecordsStartIndex = (studentRecordsPage - 1) * itemsPerPage;
+  const paginatedStudentRecords = studentRecords.slice(studentRecordsStartIndex, studentRecordsStartIndex + itemsPerPage);
+
+  // Reset incidents page when incidents change
+  useEffect(() => {
+    if (incidentsPage > incidentsTotalPages && incidentsTotalPages > 0) {
+      setIncidentsPage(1);
+    }
+  }, [incidents, incidentsTotalPages, incidentsPage]);
+
+  // Reset student records page when student records change
+  useEffect(() => {
+    if (studentRecordsPage > studentRecordsTotalPages && studentRecordsTotalPages > 0) {
+      setStudentRecordsPage(1);
+    }
+  }, [studentRecords, studentRecordsTotalPages, studentRecordsPage]);
+  
+  // Incident Statistics (only active incidents, not resolved)
+  const totalIncidents = activeIncidents.length;
+  const openIncidents = incidents.filter(i => i.status === 'Pending').length;
   const resolvedIncidents = incidents.filter(i => i.status === 'Resolved').length;
   const underReviewIncidents = incidents.filter(i => i.status === 'Under Review').length;
 
@@ -399,8 +429,8 @@ export function AdminDashboard() {
   const resolvedStudentRecords = studentRecords.filter(r => r.status === 'Resolved').length;
   const dismissedStudentRecords = studentRecords.filter(r => r.status === 'Dismissed').length;
 
-  const pendingIncidents = incidents.filter(i => i.status === 'Open');
-  const recentIncidents = incidents.slice(0, 5);
+  const pendingIncidents = incidents.filter(i => i.status === 'Pending');
+  const recentIncidents = activeIncidents.slice(0, 5);
 
   const roleData = users.reduce((acc, user) => {
     acc[user.role] = (acc[user.role] || 0) + 1;
@@ -439,7 +469,7 @@ export function AdminDashboard() {
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
           <TabsTrigger value="users">All Users ({totalUsers})</TabsTrigger>
-          <TabsTrigger value="incidents">Incident Reports ({totalIncidents})</TabsTrigger>
+          <TabsTrigger value="incidents">Incident Reports ({activeIncidents.length})</TabsTrigger>
           <TabsTrigger value="records">Student Records ({totalStudentRecords})</TabsTrigger>
           <TabsTrigger value="violations">Violation Management</TabsTrigger>
           <TabsTrigger value="stats">User Statistics</TabsTrigger>
@@ -695,17 +725,6 @@ export function AdminDashboard() {
                             <Pencil className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          <Button
-                            size="sm"
-                            style={{
-                              backgroundColor: '#16a34a',
-                              color: 'white',
-                            }}
-                            onClick={() => handleApproveIncident(incident.id)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -715,10 +734,10 @@ export function AdminDashboard() {
             </Card>
           )}
 
-          {/* All Incidents Section */}
+          {/* All Incidents Section (excluding resolved) */}
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-              <h3 className="text-lg font-semibold">All Incidents ({totalIncidents})</h3>
+              <h3 className="text-lg font-semibold">All Incidents ({activeIncidents.length})</h3>
             </div>
             <Table className="w-full">
               <TableHeader>
@@ -733,7 +752,7 @@ export function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {incidents.map((incident) => (
+                {paginatedIncidents.map((incident) => (
                   <TableRow key={incident.id}>
                     <TableCell className="font-medium truncate max-w-[150px]">
                       {incident.studentName || incident.studentId}
@@ -747,7 +766,7 @@ export function AdminDashboard() {
                     <TableCell>
                       <Badge variant={
                         incident.status === 'Resolved' ? 'default' :
-                        incident.status === 'Open' ? 'secondary' :
+                        incident.status === 'Pending' ? 'secondary' :
                         'outline'
                       }>
                         {incident.status}
@@ -777,6 +796,34 @@ export function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination for Incidents */}
+            {incidentsTotalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Showing {incidentsStartIndex + 1} to {Math.min(incidentsStartIndex + itemsPerPage, activeIncidents.length)} of {activeIncidents.length} incidents
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIncidentsPage(incidentsPage - 1)}
+                    disabled={incidentsPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIncidentsPage(incidentsPage + 1)}
+                    disabled={incidentsPage === incidentsTotalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Incident Summary Cards */}
@@ -830,7 +877,7 @@ export function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {studentRecords.map((record) => (
+                {paginatedStudentRecords.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium truncate max-w-[150px]">
                       {record.studentName || record.studentId}
@@ -865,6 +912,34 @@ export function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination for Student Records */}
+            {studentRecordsTotalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Showing {studentRecordsStartIndex + 1} to {Math.min(studentRecordsStartIndex + itemsPerPage, studentRecords.length)} of {studentRecords.length} records
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStudentRecordsPage(studentRecordsPage - 1)}
+                    disabled={studentRecordsPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStudentRecordsPage(studentRecordsPage + 1)}
+                    disabled={studentRecordsPage === studentRecordsTotalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Student Records Summary Cards */}
@@ -1140,7 +1215,7 @@ export function AdminDashboard() {
                   <p className="text-sm text-muted-foreground">
                     <Badge variant={
                       viewIncident.status === 'Resolved' ? 'default' :
-                      viewIncident.status === 'Open' ? 'secondary' :
+                      viewIncident.status === 'Pending' ? 'secondary' :
                       'outline'
                     }>
                       {viewIncident.status}
@@ -1174,18 +1249,6 @@ export function AdminDashboard() {
                   <Pencil className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                {viewIncident.status === 'Open' && (
-                  <Button 
-                    onClick={() => {
-                      handleApproveIncident(viewIncident.id);
-                      setIsViewIncidentDialogOpen(false);
-                    }}
-                    style={{ backgroundColor: '#16a34a', color: 'white' }}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark as Resolved
-                  </Button>
-                )}
               </div>
             </div>
           )}

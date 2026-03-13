@@ -31,7 +31,7 @@ export function AddIncidentDialog({
     date: new Date().toISOString().split('T')[0],
     description: "",
     actionTaken: "",
-    status: "Open" as Status,
+    status: "Pending" as Status,
     reportedBy: "",
   });
   
@@ -80,7 +80,7 @@ export function AddIncidentDialog({
       date: new Date().toISOString().split('T')[0],
       description: "",
       actionTaken: "",
-      status: "Open",
+      status: "Pending",
       reportedBy: "",
     });
     onOpenChange(false);

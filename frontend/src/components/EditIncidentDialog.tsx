@@ -33,7 +33,12 @@ export function EditIncidentDialog({
   }, []);
 
   useEffect(() => {
-    setFormData(incident);
+    if (incident) {
+      setFormData({
+        ...incident,
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
   }, [incident]);
 
   const fetchViolations = async () => {
@@ -184,7 +189,7 @@ export function EditIncidentDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Under Review">Under Review</SelectItem>
                   <SelectItem value="Resolved">Resolved</SelectItem>
                 </SelectContent>
@@ -215,29 +220,21 @@ export function EditIncidentDialog({
             />
           </div>
 
-          {/* Sanction Section */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-sanction">Assign Sanction</Label>
-            <Select
-              value={formData.actionTaken || "none"}
-              onValueChange={(value: string) => setFormData({ ...formData, actionTaken: value === "none" ? "" : value })}
-            >
-              <SelectTrigger id="edit-sanction">
-                <SelectValue placeholder="Select sanction (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Sanction</SelectItem>
-                {getSanctionsByCategory(formData.severity).map((sanction) => (
-                  <SelectItem key={sanction} value={sanction}>
-                    {sanction}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Available sanctions for {formData.severity}
-            </p>
-          </div>
+          {/* Sanction Section - Only show when status is Resolved */}
+          {formData.status === 'Resolved' && (
+            <div className="space-y-2">
+              <Label htmlFor="edit-sanction">Assign Sanction</Label>
+              <Input
+                id="edit-sanction"
+                value={formData.actionTaken || ''}
+                onChange={(e) => setFormData({ ...formData, actionTaken: e.target.value })}
+                placeholder="Enter sanction (e.g., Written Warning, Suspension, etc.)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Type the sanction to assign to this student
+              </p>
+            </div>
+          )}
            
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -14,6 +14,7 @@ router.get('/', verifyToken, async (req, res) => {
              dc.reported_by,
              dc.date_reported as date,
              dc.case_status as status,
+             dc.action_taken,
              s.first_name,
              s.last_name,
              s.course as grade,
@@ -39,7 +40,7 @@ router.get('/', verifyToken, async (req, res) => {
       type: record.type,
       severity: record.severity,
       description: record.description,
-      actionTaken: '',
+      actionTaken: record.action_taken || '',
       status: record.status || 'Pending',
       reportedBy: record.reportedByName || 'Unknown',
       date: record.date,
@@ -63,6 +64,7 @@ router.get('/:id', verifyToken, async (req, res) => {
              dc.reported_by,
              dc.date_reported as date,
              dc.case_status as status,
+             dc.action_taken,
              s.first_name,
              s.last_name,
              s.course as grade,
@@ -91,7 +93,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       type: record.type,
       severity: record.severity,
       description: record.description,
-      actionTaken: '',
+      actionTaken: record.action_taken || '',
       status: record.status || 'Pending',
       reportedBy: record.reportedByName || 'Unknown',
       date: record.date,
@@ -187,56 +189,94 @@ router.post('/', verifyToken, async (req, res) => {
 
 // Update disciplinary case
 router.put('/:id', verifyToken, async (req, res) => {
-  const { studentId, type, severity, date, description, status, reportedBy, actionTaken } = req.body;
+  const { studentId, type, severity, date, description, status, reportedBy, actionTaken, sanction } = req.body;
   const { id } = req.params;
 
   try {
     // First get the current case to find violation_id
-    const currentCase = await getRow('SELECT violation_id FROM disciplinary_cases WHERE case_id = ?', [id]);
+    const currentCase = await getRow('SELECT violation_id, student_id, reported_by, action_taken FROM disciplinary_cases WHERE case_id = ?', [id]);
     
     if (!currentCase) {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Find or create violation
-    let violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
-    if (!violation) {
-      const defaultCategory = severity || 'Category 1 Offense';
-      const insertResult = await runQuery(
-        'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
-        [type, defaultCategory, description || 'Auto-created from incident update']
-      );
-      violation = { id: insertResult.insertId };
+    // Find or create violation - use current violation if type is not provided
+    let violation;
+    if (type) {
+      violation = await getRow('SELECT violation_id as id FROM violations WHERE violation_name = ?', [type]);
+      if (!violation) {
+        const defaultCategory = severity || 'Category 1 Offense';
+        const insertResult = await runQuery(
+          'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
+          [type, defaultCategory, description || 'Auto-created from incident update']
+        );
+        violation = { id: insertResult.insertId };
+      }
+    } else {
+      // Use the existing violation_id from current case
+      violation = { id: currentCase.violation_id };
     }
 
-    const reportedById = reportedBy || req.user?.id || null;
-
-    // Update the case (without action_taken for now - column doesn't exist in DB)
+    const reportedById = reportedBy || req.user?.id;
+    
+    // If reportedBy is a string (name), try to look up the user_id
+    let reportedByIdNum;
+    if (reportedById) {
+      const parsedId = parseInt(reportedById);
+      if (!isNaN(parsedId)) {
+        // It's a numeric user_id
+        reportedByIdNum = parsedId;
+      } else {
+        // It's likely a name string, try to look up the user
+        const user = await getRow('SELECT user_id FROM users WHERE full_name = ?', [reportedById]);
+        reportedByIdNum = user ? user.user_id : (currentCase.reported_by || null);
+      }
+    } else {
+      reportedByIdNum = currentCase.reported_by || null;
+    }
+    
+    // Use the existing values from the current case if no new values are provided
+    const studentIdNum = studentId ? parseInt(studentId) : (currentCase.student_id || null);
+    
+    // Use actionTaken or sanction, or keep existing action_taken
+    const actionTakenValue = actionTaken || sanction || currentCase.action_taken || '';
+    
     const result = await runQuery(
-      'UPDATE disciplinary_cases SET student_id = ?, violation_id = ?, reported_by = ?, date_reported = ?, case_status = ? WHERE case_id = ?',
-      [studentId ? parseInt(studentId) : null, violation.id, reportedById ? parseInt(reportedById) : null, date, status, id]
+      'UPDATE disciplinary_cases SET student_id = ?, violation_id = ?, reported_by = ?, date_reported = ?, case_status = ?, action_taken = ? WHERE case_id = ?',
+      [studentIdNum, violation.id, reportedByIdNum, date, status, actionTakenValue, id]
     );
 
     // If status is Resolved, also add the record to disciplinary_records
     if (status === 'Resolved') {
       try {
         // Check if a record already exists for this case
-        const existingRecord = await getRow(
+        let existingRecord = await getRow(
           'SELECT record_id FROM disciplinary_records WHERE student_id = ? AND violation_id = ? AND date_reported = ?',
-          [studentId, violation.id, date]
+          [studentIdNum, violation.id, date]
         );
         
+        let recordId;
         if (!existingRecord) {
           // Create a new disciplinary record
-          await runQuery(
+          const insertResult = await runQuery(
             'INSERT INTO disciplinary_records (student_id, violation_id, reported_by, date_reported, status) VALUES (?, ?, ?, ?, ?)',
-            [studentId, violation.id, reportedById, date, 'Resolved']
+            [studentIdNum, violation.id, reportedByIdNum, date, 'Resolved']
           );
+          recordId = insertResult.insertId;
         } else {
           // Update existing record status to Resolved
           await runQuery(
             'UPDATE disciplinary_records SET status = ? WHERE record_id = ?',
             ['Resolved', existingRecord.record_id]
+          );
+          recordId = existingRecord.record_id;
+        }
+        
+        // If sanction is provided, save it to the sanctions table
+        if (sanction && sanction.trim()) {
+          await runQuery(
+            'INSERT INTO sanctions (record_id, sanction_type, description) VALUES (?, ?, ?)',
+            [recordId, sanction.trim(), `Sanction assigned for resolved incident`]
           );
         }
       } catch (e) {
