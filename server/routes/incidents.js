@@ -4,6 +4,73 @@ const { verifyToken } = require('./auth');
 
 const router = express.Router();
 
+// Get student offense count and history
+router.get('/student/:studentId/offense-count', verifyToken, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { violationId } = req.query;
+    
+    // If violationId is provided, count only that specific offense
+    if (violationId) {
+      const offenseCount = await getRow(
+        `SELECT COUNT(*) as count FROM disciplinary_cases WHERE student_id = ? AND violation_id = ?`,
+        [studentId, violationId]
+      );
+      
+      // Get previous incidents of the same type
+      const previousIncidents = await getAllRows(
+        `SELECT dc.case_id, dc.date_reported, v.violation_name, v.category, dc.case_status
+         FROM disciplinary_cases dc
+         JOIN violations v ON dc.violation_id = v.violation_id
+         WHERE dc.student_id = ? AND dc.violation_id = ?
+         ORDER BY dc.date_reported DESC`,
+        [studentId, violationId]
+      );
+      
+      return res.json({
+        offenseCount: offenseCount?.count || 0,
+        previousIncidents: previousIncidents || []
+      });
+    }
+    
+    // Otherwise, get total count and breakdown
+    const totalCount = await getRow(
+      `SELECT COUNT(*) as total FROM disciplinary_cases WHERE student_id = ?`,
+      [studentId]
+    );
+    
+    // Get offense count by category
+    const categoryCount = await getAllRows(
+      `SELECT v.category, COUNT(*) as count 
+       FROM disciplinary_cases dc 
+       JOIN violations v ON dc.violation_id = v.violation_id 
+       WHERE dc.student_id = ? 
+       GROUP BY v.category`,
+      [studentId]
+    );
+    
+    // Get recent incidents (last 5)
+    const recentIncidents = await getAllRows(
+      `SELECT dc.case_id, dc.date_reported, v.violation_name, v.category, dc.case_status
+       FROM disciplinary_cases dc
+       JOIN violations v ON dc.violation_id = v.violation_id
+       WHERE dc.student_id = ?
+       ORDER BY dc.date_reported DESC
+       LIMIT 5`,
+      [studentId]
+    );
+    
+    res.json({
+      totalOffenseCount: totalCount?.total || 0,
+      categoryCount: categoryCount || [],
+      recentIncidents: recentIncidents || []
+    });
+  } catch (error) {
+    console.error('Error fetching student offense count:', error);
+    res.status(500).json({ error: 'Failed to fetch student offense count' });
+  }
+});
+
 // Get all disciplinary cases
 router.get('/', verifyToken, async (req, res) => {
   try {
@@ -34,6 +101,7 @@ router.get('/', verifyToken, async (req, res) => {
     const transformedRecords = records.map(record => ({
       id: record.id.toString(),
       studentId: record.student_id.toString(),
+      violationId: record.violation_id ? record.violation_id.toString() : null,
       studentName: `${record.first_name} ${record.last_name}`,
       grade: record.grade || '',
       class: record.year_level ? `Year ${record.year_level}` : '',

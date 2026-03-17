@@ -24,7 +24,7 @@ interface StudentViewProps {
 export function StudentView({ student, incidents, onLogout }: StudentViewProps) {
   // The student prop now contains all the data fetched from the database
   const studentIncidents = incidents.filter(i => i.studentId === student.id);
-  const openIncidents = studentIncidents.filter(i => i.status === "Open").length;
+  const pendingIncidents = studentIncidents.filter(i => i.status === "Pending").length;
   const resolvedIncidents = studentIncidents.filter(i => i.status === "Resolved").length;
   const underReview = studentIncidents.filter(i => i.status === "Under Review").length;
   
@@ -124,8 +124,8 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted-foreground">Open Cases</p>
-                <p className="mt-2">{openIncidents}</p>
+                <p className="text-muted-foreground">Pending Cases</p>
+                <p className="mt-2">{pendingIncidents}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
                 <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />

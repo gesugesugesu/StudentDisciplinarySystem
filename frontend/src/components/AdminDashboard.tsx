@@ -10,17 +10,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { User, UserRole, UserStatus, Incident } from "../types";
+import { User, UserRole, UserStatus, Incident, GroupedStudentRecord } from "../types";
 import { toast } from "sonner";
 import { AddUsersDialog } from "./AddUsersDialog";
 import { ViolationManagement } from "./ViolationManagement";
 import { EditIncidentDialog } from "./EditIncidentDialog";
-import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown } from "lucide-react";
+import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown, Repeat } from "lucide-react";
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [studentRecords, setStudentRecords] = useState<Incident[]>([]);
+  const [studentRecords, setStudentRecords] = useState<GroupedStudentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewUser, setViewUser] = useState<User | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -55,6 +55,11 @@ export function AdminDashboard() {
   const [showOffenseSuggestions, setShowOffenseSuggestions] = useState(false);
   const [offenseSortOrder, setOffenseSortOrder] = useState<'date_desc' | 'date_asc'>('date_desc');
   const [offenseResultsPage, setOffenseResultsPage] = useState(1);
+  
+  // Repeat offender tracking
+  const [studentOffenseCounts, setStudentOffenseCounts] = useState<Record<string, number>>({});
+  const [loadingOffenseCounts, setLoadingOffenseCounts] = useState(false);
+  const [studentRecordsOffenseCounts, setStudentRecordsOffenseCounts] = useState<Record<string, number>>({});
 
   const API_BASE = 'http://localhost:5000/api';
 
@@ -79,6 +84,16 @@ export function AdminDashboard() {
       if (response.ok) {
         const data = await response.json();
         setStudentRecords(data);
+        
+        // Compute offense counts from student records
+        const counts: Record<string, number> = {};
+        data.forEach((record: GroupedStudentRecord) => {
+          record.violations.forEach(violation => {
+            const key = `${record.studentId}-${violation.violationId}`;
+            counts[key] = (counts[key] || 0) + 1;
+          });
+        });
+        setStudentRecordsOffenseCounts(counts);
       }
     } catch (error) {
       toast.error('Failed to fetch student records');
@@ -169,6 +184,43 @@ export function AdminDashboard() {
     }
   };
 
+  // Fetch offense count for a student (offense-specific)
+  const fetchStudentOffenseCount = async (studentId: string, violationId?: string): Promise<number> => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${API_BASE}/incidents/student/${studentId}/offense-count`;
+      if (violationId) {
+        url += `?violationId=${violationId}`;
+      }
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.offenseCount || 0;
+      }
+    } catch (error) {
+      console.error('Error fetching offense count:', error);
+    }
+    return 0;
+  };
+
+  // Compute offense-specific counts from loaded incidents
+  const computeOffenseCounts = () => {
+    const counts: Record<string, number> = {};
+    
+    // For each incident, count how many times this student has this specific violation
+    incidents.forEach(incident => {
+      if (incident.studentId && incident.violationId) {
+        const key = `${incident.studentId}-${incident.violationId}`;
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    
+    setStudentOffenseCounts(counts);
+    setLoadingOffenseCounts(false);
+  };
+
   const fetchIncidents = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -178,6 +230,8 @@ export function AdminDashboard() {
       if (response.ok) {
         const data = await response.json();
         setIncidents(data);
+        // Compute offense counts after incidents are loaded
+        setTimeout(() => computeOffenseCounts(), 100);
       }
     } catch (error) {
       toast.error('Failed to fetch incidents');
@@ -493,9 +547,9 @@ export function AdminDashboard() {
   const paginatedIncidents = activeIncidents.slice(incidentsStartIndex, incidentsStartIndex + itemsPerPage);
 
   // Pagination for student records
-  const studentRecordsTotalPages = Math.ceil(studentRecords.length / itemsPerPage);
+  const studentRecordsTotalPages = Math.ceil((studentRecords?.length || 0) / itemsPerPage);
   const studentRecordsStartIndex = (studentRecordsPage - 1) * itemsPerPage;
-  const paginatedStudentRecords = studentRecords.slice(studentRecordsStartIndex, studentRecordsStartIndex + itemsPerPage);
+  const paginatedStudentRecords = studentRecords?.slice(studentRecordsStartIndex, studentRecordsStartIndex + itemsPerPage) || [];
 
   // Pagination for offense search results
   const offenseResultsTotalPages = Math.ceil(studentsByOffense.length / itemsPerPage);
@@ -522,11 +576,14 @@ export function AdminDashboard() {
   const resolvedIncidents = incidents.filter(i => i.status === 'Resolved').length;
   const underReviewIncidents = incidents.filter(i => i.status === 'Under Review').length;
 
-  // Student Records Statistics
-  const totalStudentRecords = studentRecords.length;
-  const pendingStudentRecords = studentRecords.filter(r => r.status === 'Pending').length;
-  const resolvedStudentRecords = studentRecords.filter(r => r.status === 'Resolved').length;
-  const dismissedStudentRecords = studentRecords.filter(r => r.status === 'Dismissed').length;
+  // Student Records Statistics (count total violations across all students)
+  const totalStudentRecords = studentRecords?.reduce((sum, record) => sum + record.violations.length, 0) || 0;
+  const pendingStudentRecords = studentRecords?.reduce((sum, record) => 
+    sum + record.violations.filter(v => v.status === 'Pending').length, 0) || 0;
+  const resolvedStudentRecords = studentRecords?.reduce((sum, record) => 
+    sum + record.violations.filter(v => v.status === 'Resolved').length, 0) || 0;
+  const dismissedStudentRecords = studentRecords?.reduce((sum, record) => 
+    sum + record.violations.filter(v => v.status === 'Dismissed').length, 0) || 0;
 
   const pendingIncidents = incidents.filter(i => i.status === 'Pending');
   const recentIncidents = activeIncidents.slice(0, 5);
@@ -787,6 +844,7 @@ export function AdminDashboard() {
                     <TableHead>Student</TableHead>
                     <TableHead>Violation Type</TableHead>
                     <TableHead>Category</TableHead>
+                    <TableHead>Previous Offenses</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Reported By</TableHead>
                     <TableHead>Actions</TableHead>
@@ -803,6 +861,16 @@ export function AdminDashboard() {
                         <Badge variant={incident.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
                           {incident.severity}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {studentOffenseCounts[incident.studentId] > 0 ? (
+                          <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                            <Repeat className="h-3 w-3 mr-1" />
+                            {studentOffenseCounts[incident.studentId]}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">First</span>
+                        )}
                       </TableCell>
                       <TableCell>{new Date(incident.date).toLocaleDateString()}</TableCell>
                       <TableCell>{incident.reportedBy}</TableCell>
@@ -841,13 +909,14 @@ export function AdminDashboard() {
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-1/6">Student</TableHead>
-                  <TableHead className="w-1/6">Violation Type</TableHead>
+                  <TableHead className="w-1/7">Student</TableHead>
+                  <TableHead className="w-1/7">Violation Type</TableHead>
                   <TableHead className="w-1/8">Category</TableHead>
                   <TableHead className="w-1/8">Status</TableHead>
+                  <TableHead className="w-1/8">Previous</TableHead>
                   <TableHead className="w-1/8">Date</TableHead>
-                  <TableHead className="w-1/6">Reported By</TableHead>
-                  <TableHead className="w-24 text-right">Actions</TableHead>
+                  <TableHead className="w-1/7">Reported By</TableHead>
+                  <TableHead className="w-20 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -870,6 +939,16 @@ export function AdminDashboard() {
                       }>
                         {incident.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {studentOffenseCounts[`${incident.studentId}-${incident.violationId}`] > 0 ? (
+                        <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                          <Repeat className="h-3 w-3 mr-1" />
+                          {studentOffenseCounts[`${incident.studentId}-${incident.violationId}`]}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </TableCell>
                     <TableCell>{new Date(incident.date).toLocaleDateString()}</TableCell>
                     <TableCell className="truncate max-w-[120px]">{incident.reportedBy}</TableCell>
@@ -1144,6 +1223,7 @@ export function AdminDashboard() {
                   <TableHead className="w-1/6">Student</TableHead>
                   <TableHead className="w-1/6">Violation Type</TableHead>
                   <TableHead className="w-1/8">Category</TableHead>
+                  <TableHead className="w-1/8">Count</TableHead>
                   <TableHead className="w-1/8">Status</TableHead>
                   <TableHead className="w-1/8">Date</TableHead>
                   <TableHead className="w-1/6">Reported By</TableHead>
@@ -1151,46 +1231,85 @@ export function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedStudentRecords.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell className="font-medium truncate max-w-[150px]">
-                      {record.studentName || record.studentId}
-                    </TableCell>
-                    <TableCell className="truncate max-w-[150px]">{record.type}</TableCell>
-                    <TableCell>
-                      <Badge variant={record.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
-                        {record.severity}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        record.status === 'Resolved' ? 'default' :
-                        record.status === 'Dismissed' ? 'outline' :
-                        'secondary'
-                      }>
-                        {record.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="truncate max-w-[120px]">{record.reportedBy}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleViewStudentRecord(record)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                {paginatedStudentRecords.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No student records found.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  paginatedStudentRecords.map((record) => (
+                    record.violations.map((violation, index) => (
+                      <TableRow key={`${record.studentId}-${violation.id}`}>
+                        {index === 0 && (
+                          <TableCell className="font-medium truncate max-w-[150px]" rowSpan={record.violations.length}>
+                            {record.studentName}
+                          </TableCell>
+                        )}
+                        <TableCell className="truncate max-w-[150px]">{violation.type}</TableCell>
+                        <TableCell>
+                          <Badge variant={violation.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
+                            {violation.severity}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {studentRecordsOffenseCounts[`${record.studentId}-${violation.violationId}`] > 1 ? (
+                            <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                              <Repeat className="h-3 w-3 mr-1" />
+                              {studentRecordsOffenseCounts[`${record.studentId}-${violation.violationId}`]}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">1</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            violation.status === 'Resolved' ? 'default' :
+                            violation.status === 'Dismissed' ? 'outline' :
+                            'secondary'
+                          }>
+                            {violation.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{new Date(violation.date).toLocaleDateString()}</TableCell>
+                        <TableCell className="truncate max-w-[120px]">{violation.reportedBy}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              // Create a temporary incident object for viewing
+                              const incident: Incident = {
+                                id: violation.id,
+                                studentId: record.studentId,
+                                studentName: record.studentName,
+                                type: violation.type as any,
+                                violationId: violation.violationId,
+                                severity: violation.severity,
+                                date: violation.date,
+                                description: violation.description || '',
+                                actionTaken: '',
+                                status: violation.status,
+                                reportedBy: violation.reportedBy
+                              };
+                              setViewStudentRecord(incident);
+                              setIsViewStudentRecordDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ))
+                )}
               </TableBody>
             </Table>
             {/* Pagination for Student Records */}
             {studentRecordsTotalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t">
                 <p className="text-sm text-muted-foreground">
-                  Showing {studentRecordsStartIndex + 1} to {Math.min(studentRecordsStartIndex + itemsPerPage, studentRecords.length)} of {studentRecords.length} records
+                  Showing {studentRecordsStartIndex + 1} to {Math.min(studentRecordsStartIndex + itemsPerPage, studentRecords?.length || 0)} of {studentRecords?.length || 0} records
                 </p>
                 <div className="flex gap-2">
                   <Button

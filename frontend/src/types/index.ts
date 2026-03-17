@@ -93,3 +93,22 @@ export interface Violation {
   severity: Severity;
   description: string | null;
 }
+
+export interface StudentViolation {
+  id: string;
+  violationId: string;
+  type: string;
+  severity: Severity;
+  description: string;
+  status: Status;
+  reportedBy: string;
+  date: string;
+}
+
+export interface GroupedStudentRecord {
+  studentId: string;
+  studentName: string;
+  grade: string;
+  class: string;
+  violations: StudentViolation[];
+}

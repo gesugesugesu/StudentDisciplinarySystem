@@ -11,18 +11,16 @@ export function exportToCSV(incidents: Incident[], students: Student[], filename
     "Grade",
     "Class",
     "Type",
-    "Severity",
+    "Category",
     "Description",
     "Action Taken",
     "Status",
-    "Reported By",
-    "Parent Notified"
+    "Reported By"
   ];
 
   // Prepare CSV rows
   const rows = incidents.map(incident => {
     const student = students.find(s => s.id === incident.studentId);
-    const hasParentNotification = incident.communicationLogs && incident.communicationLogs.length > 0;
     
     return [
       format(new Date(incident.date), "MM/dd/yyyy"),
@@ -34,8 +32,7 @@ export function exportToCSV(incidents: Incident[], students: Student[], filename
       incident.description,
       incident.actionTaken,
       incident.status,
-      incident.reportedBy,
-      hasParentNotification ? "Yes" : "No"
+      incident.reportedBy
     ];
   });
 
@@ -61,18 +58,27 @@ export function exportToCSV(incidents: Incident[], students: Student[], filename
 export function exportToPDF(incidents: Incident[], students: Student[], filename: string = "incidents-report.pdf") {
   const doc = new jsPDF();
   
-  // Add title
-  doc.setFontSize(18);
-  doc.text("Disciplinary Incidents Report", 14, 22);
+  // Add system logo/branding header
+  doc.setFillColor(3, 2, 19); // Dark navy color from the system
+  doc.rect(0, 0, 210, 25, 'F');
+  
+  // Add system name
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.text("D-Manage: Computerized Student Disciplinary Management", 14, 12);
+  doc.setFontSize(10);
+  doc.text("Disciplinary Incidents Report", 14, 18);
+  
+  // Reset text color for rest of document
+  doc.setTextColor(0, 0, 0);
   
   // Add generation date
   doc.setFontSize(10);
-  doc.text(`Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}`, 14, 30);
+  doc.text(`Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}`, 14, 33);
   
   // Prepare table data
   const tableData = incidents.map(incident => {
     const student = students.find(s => s.id === incident.studentId);
-    const hasParentNotification = incident.communicationLogs && incident.communicationLogs.length > 0;
     
     return [
       format(new Date(incident.date), "MM/dd/yy"),
@@ -81,36 +87,46 @@ export function exportToPDF(incidents: Incident[], students: Student[], filename
       incident.type,
       incident.severity,
       incident.status,
-      incident.reportedBy,
-      hasParentNotification ? "Yes" : "No"
+      incident.reportedBy
     ];
   });
 
   // Add table
   autoTable(doc, {
-    head: [["Date", "Student", "Grade", "Type", "Severity", "Status", "Reported By", "Parent Notified"]],
+    head: [["Date", "Student", "Grade", "Type", "Category", "Status", "Reported By"]],
     body: tableData,
-    startY: 35,
+    startY: 40,
     styles: { fontSize: 8 },
     headStyles: { fillColor: [3, 2, 19] },
     alternateRowStyles: { fillColor: [245, 245, 245] },
   });
 
   // Add summary statistics
-  const finalY = (doc as any).lastAutoTable.finalY || 35;
+  const finalY = (doc as any).lastAutoTable.finalY || 40;
   doc.setFontSize(12);
   doc.text("Summary Statistics", 14, finalY + 15);
   
   doc.setFontSize(10);
   const totalIncidents = incidents.length;
-  const severeCount = incidents.filter(i => i.severity === "Severe").length;
+  const category3Count = incidents.filter(i => i.severity === "Category 3 Offense").length;
+  const category2Count = incidents.filter(i => i.severity === "Category 2 Offense").length;
+  const category1Count = incidents.filter(i => i.severity === "Category 1 Offense").length;
   const openCount = incidents.filter(i => i.status === "Open").length;
-  const parentNotifiedCount = incidents.filter(i => i.communicationLogs && i.communicationLogs.length > 0).length;
   
   doc.text(`Total Incidents: ${totalIncidents}`, 14, finalY + 23);
-  doc.text(`Severe Incidents: ${severeCount}`, 14, finalY + 30);
-  doc.text(`Open Cases: ${openCount}`, 14, finalY + 37);
-  doc.text(`Parent Notifications Sent: ${parentNotifiedCount}`, 14, finalY + 44);
+  doc.text(`Category 1 Offenses: ${category1Count}`, 14, finalY + 30);
+  doc.text(`Category 2 Offenses: ${category2Count}`, 14, finalY + 37);
+  doc.text(`Category 3 Offenses: ${category3Count}`, 14, finalY + 44);
+  doc.text(`Open Cases: ${openCount}`, 14, finalY + 51);
+
+  // Add footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFillColor(3, 2, 19);
+  doc.rect(0, pageHeight - 15, 210, 15, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.text("D-Manage: Computerized Student Disciplinary Management", 14, pageHeight - 7);
+  doc.text(`Page 1`, 185, pageHeight - 7);
 
   // Save the PDF
   doc.save(filename);
@@ -119,28 +135,38 @@ export function exportToPDF(incidents: Incident[], students: Student[], filename
 export function exportStudentReport(student: Student, incidents: Incident[], filename?: string) {
   const doc = new jsPDF();
 
-  // Add title
-  doc.setFontSize(18);
-  doc.text("Student Disciplinary Report", 14, 22);
+  // Add system logo/branding header
+  doc.setFillColor(3, 2, 19); // Dark navy color from the system
+  doc.rect(0, 0, 210, 25, 'F');
+  
+  // Add system name
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.text("D-Manage: Computerized Student Disciplinary Management", 14, 12);
+  doc.setFontSize(10);
+  doc.text("Student Disciplinary Report", 14, 18);
+  
+  // Reset text color for rest of document
+  doc.setTextColor(0, 0, 0);
 
   // Student information
   doc.setFontSize(12);
-  doc.text("Student Information", 14, 35);
+  doc.text("Student Information", 14, 38);
   doc.setFontSize(10);
-  doc.text(`Name: ${student.name}`, 14, 43);
-  doc.text(`Grade: ${student.grade}`, 14, 50);
-  doc.text(`Class: ${student.class}`, 14, 57);
-  doc.text(`Email: ${student.email}`, 14, 64);
+  doc.text(`Name: ${student.name}`, 14, 46);
+  doc.text(`Grade: ${student.grade}`, 14, 53);
+  doc.text(`Class: ${student.class}`, 14, 60);
+  doc.text(`Email: ${student.email}`, 14, 67);
 
   if (student.parentName) {
-    doc.text(`Parent: ${student.parentName}`, 14, 71);
-    doc.text(`Parent Email: ${student.parentEmail || "N/A"}`, 14, 78);
-    doc.text(`Parent Phone: ${student.parentPhone || "N/A"}`, 14, 85);
+    doc.text(`Parent: ${student.parentName}`, 14, 74);
+    doc.text(`Parent Email: ${student.parentEmail || "N/A"}`, 14, 81);
+    doc.text(`Parent Phone: ${student.parentPhone || "N/A"}`, 14, 88);
   }
 
   // Incidents table
   doc.setFontSize(12);
-  doc.text("Incident History", 14, student.parentName ? 95 : 75);
+  doc.text("Incident History", 14, student.parentName ? 98 : 85);
 
   const tableData = incidents.map(incident => {
     return [
@@ -153,13 +179,21 @@ export function exportStudentReport(student: Student, incidents: Incident[], fil
   });
 
   autoTable(doc, {
-    head: [["Date", "Type", "Severity", "Description", "Status"]],
+    head: [["Date", "Type", "Category", "Description", "Status"]],
     body: tableData,
-    startY: student.parentName ? 100 : 80,
+    startY: student.parentName ? 103 : 90,
     styles: { fontSize: 9 },
     headStyles: { fillColor: [3, 2, 19] },
     alternateRowStyles: { fillColor: [245, 245, 245] },
   });
+
+  // Add footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFillColor(3, 2, 19);
+  doc.rect(0, pageHeight - 15, 210, 15, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.text("D-Manage: Computerized Student Disciplinary Management", 14, pageHeight - 7);
 
   // Save the PDF
   const pdfFilename = filename || `${student.name.replace(/\s+/g, "-")}-report.pdf`;
@@ -171,18 +205,15 @@ export function exportStudentIncidentsCSV(student: Student, incidents: Incident[
   const headers = [
     "Date",
     "Type",
-    "Severity",
+    "Category",
     "Description",
     "Action Taken",
     "Status",
-    "Reported By",
-    "Parent Notified"
+    "Reported By"
   ];
 
   // Prepare CSV rows
   const rows = incidents.map(incident => {
-    const hasParentNotification = incident.communicationLogs && incident.communicationLogs.length > 0;
-
     return [
       format(new Date(incident.date), "MM/dd/yyyy"),
       incident.type,
@@ -190,8 +221,7 @@ export function exportStudentIncidentsCSV(student: Student, incidents: Incident[
       incident.description,
       incident.actionTaken,
       incident.status,
-      incident.reportedBy,
-      hasParentNotification ? "Yes" : "No"
+      incident.reportedBy
     ];
   });
 

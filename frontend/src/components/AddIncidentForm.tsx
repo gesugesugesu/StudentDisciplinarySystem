@@ -5,8 +5,9 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Badge } from "./ui/badge";
 import { Incident, Severity, Status, Student, Violation } from "../types";
-import { FilePlus, AlertTriangle, Shield, Calendar, User, BookOpen, ClipboardList } from "lucide-react";
+import { FilePlus, AlertTriangle, Shield, Calendar, User, BookOpen, ClipboardList, Repeat, History, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddIncidentFormProps {
@@ -22,6 +23,12 @@ export function AddIncidentForm({
 }: AddIncidentFormProps) {
   const [violations, setViolations] = useState<Violation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offenseInfo, setOffenseInfo] = useState<{
+    offenseCount: number;
+    previousIncidents: { case_id: number; date_reported: string; violation_name: string; category: string; case_status: string }[];
+  } | null>(null);
+  const [selectedViolationId, setSelectedViolationId] = useState<number | null>(null);
+  const [loadingOffenseInfo, setLoadingOffenseInfo] = useState(false);
   const [formData, setFormData] = useState({
     studentId: preselectedStudentId || "",
     type: "" as string,
@@ -81,6 +88,38 @@ export function AddIncidentForm({
       status: "Pending",
       reportedBy: "",
     });
+    setOffenseInfo(null);
+  };
+
+  // Fetch offense count when student and offense type are selected
+  const fetchOffenseInfo = async (studentId: string, violationId?: number) => {
+    if (!studentId) {
+      setOffenseInfo(null);
+      return;
+    }
+    
+    setLoadingOffenseInfo(true);
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${API_BASE}/incidents/student/${studentId}/offense-count`;
+      
+      // If violationId is provided, get offense-specific count
+      if (violationId) {
+        url += `?violationId=${violationId}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOffenseInfo(data);
+      }
+    } catch (error) {
+      console.error('Error fetching offense info:', error);
+    } finally {
+      setLoadingOffenseInfo(false);
+    }
   };
 
   // Handle incident type change and automatically set severity
@@ -91,6 +130,12 @@ export function AddIncidentForm({
       type: value,
       severity: selectedViolation?.severity || "Category 1 Offense"
     });
+    
+    // Fetch offense-specific count if student is selected
+    if (formData.studentId && selectedViolation?.id) {
+      setSelectedViolationId(selectedViolation.id);
+      fetchOffenseInfo(formData.studentId, selectedViolation.id);
+    }
   };
   
   if (loading) {
@@ -122,7 +167,18 @@ export function AddIncidentForm({
               </Label>
               <Select
                 value={formData.studentId}
-                onValueChange={(value: string) => setFormData({ ...formData, studentId: value })}
+                onValueChange={(value: string) => {
+                  setFormData({ ...formData, studentId: value });
+                  setSelectedViolationId(null);
+                  setOffenseInfo(null);
+                  // Fetch with offense-specific count if offense is already selected
+                  if (value && formData.type) {
+                    const selectedV = violations.find(v => v.name === formData.type);
+                    if (selectedV?.id) {
+                      fetchOffenseInfo(value, selectedV.id);
+                    }
+                  }
+                }}
                 required
               >
                 <SelectTrigger>
@@ -137,6 +193,51 @@ export function AddIncidentForm({
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Repeat Offender Warning */}
+            {loadingOffenseInfo ? (
+              <div className="p-4 bg-muted rounded-md">
+                <p className="text-sm text-muted-foreground">Loading student record...</p>
+              </div>
+            ) : offenseInfo && offenseInfo.offenseCount > 0 ? (
+              <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <Repeat className="h-5 w-5 text-amber-600" />
+                  <h4 className="font-semibold text-amber-800 dark:text-amber-200">
+                    {offenseInfo.offenseCount === 1 ? '1st Offense' : 
+                     offenseInfo.offenseCount === 2 ? '2nd Offense' : 
+                     offenseInfo.offenseCount === 3 ? '3rd Offense' : 
+                     `${offenseInfo.offenseCount}th Offense`}
+                  </h4>
+                </div>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
+                  This student has <strong>{offenseInfo.offenseCount}</strong> previous incident(s) of the same offense type.
+                </p>
+                {offenseInfo.previousIncidents.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-700">
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                      <History className="h-3 w-3" /> Previous incidents:
+                    </p>
+                    <ul className="mt-1 text-xs text-amber-600 dark:text-amber-400 space-y-1">
+                      {offenseInfo.previousIncidents.slice(0, 3).map((incident: any, idx: number) => (
+                        <li key={idx}>
+                          {new Date(incident.date_reported).toLocaleDateString()} - {incident.case_status}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : formData.studentId && (
+              <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    First offense for this type - no previous record found
+                  </p>
+                </div>
+              </div>
+            )}
             
             {/* Incident Details Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

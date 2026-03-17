@@ -287,34 +287,10 @@ export function StudentProfile({
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div>
                     <span className="text-muted-foreground">
                       {format(new Date(incident.date), "MMM d, yyyy")}
                     </span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEditIncident(incident)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onNotifyParent(incident)}>
-                          <Bell className="h-4 w-4 mr-2" />
-                          Notify Parent
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setDeleteConfirmId(incident.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 </div>
                 

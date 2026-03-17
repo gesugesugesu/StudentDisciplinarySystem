@@ -91,7 +91,7 @@ router.get('/by-offense/:violationId', verifyToken, async (req, res) => {
   }
 });
 
-// Get all disciplinary records with filters
+// Get all disciplinary records with filters - grouped by student
 router.get('/', verifyToken, async (req, res) => {
   const { status, studentId, search } = req.query;
   
@@ -135,26 +135,44 @@ router.get('/', verifyToken, async (req, res) => {
     params.push(searchPattern, searchPattern, searchPattern);
   }
   
-  query += ' ORDER BY dr.date_reported DESC';
+  // Sort by student name ascending, then by date descending
+  query += ' ORDER BY s.last_name ASC, s.first_name ASC, dr.date_reported DESC';
 
   try {
     const records = await getAllRows(query, params);
     
-    // Transform to match frontend expectations
-    const transformedRecords = records.map(record => ({
-      id: record.id.toString(),
-      studentId: record.student_id.toString(),
-      studentName: `${record.first_name} ${record.last_name}`,
-      grade: record.grade || '',
-      class: record.year_level ? `Year ${record.year_level}` : '',
-      type: record.type,
-      severity: record.severity || 'Category 1 Offense',
-      description: record.description,
-      status: record.status || 'Pending',
-      reportedBy: record.reportedByName || 'Unknown',
-      date: record.date,
-      communicationLogs: []
-    }));
+    // Group records by student
+    const groupedRecords = {};
+    records.forEach(record => {
+      const studentName = `${record.first_name} ${record.last_name}`.trim();
+      const studentKey = record.student_id.toString();
+      
+      if (!groupedRecords[studentKey]) {
+        groupedRecords[studentKey] = {
+          studentId: studentKey,
+          studentName: studentName || 'Unknown',
+          grade: record.grade || '',
+          class: record.year_level ? `Year ${record.year_level}` : '',
+          violations: []
+        };
+      }
+      
+      groupedRecords[studentKey].violations.push({
+        id: record.id.toString(),
+        violationId: record.violation_id ? record.violation_id.toString() : '',
+        type: record.type,
+        severity: record.severity || 'Category 1 Offense',
+        description: record.description,
+        status: record.status || 'Pending',
+        reportedBy: record.reportedByName || 'Unknown',
+        date: record.date
+      });
+    });
+    
+    // Convert to array and sort by student name
+    const transformedRecords = Object.values(groupedRecords).sort((a, b) => 
+      a.studentName.localeCompare(b.studentName)
+    );
 
     res.json(transformedRecords);
   } catch (error) {

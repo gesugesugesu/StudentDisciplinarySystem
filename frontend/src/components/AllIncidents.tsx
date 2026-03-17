@@ -21,11 +21,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { Search, MoreVertical, Edit, Trash2, Bell, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MoreVertical, Edit, Trash2, Bell, Download, ChevronLeft, ChevronRight, Repeat } from "lucide-react";
 import { Incident, Student, Severity, Status } from "../types";
 import { format } from "date-fns";
 import { exportToCSV, exportToPDF, exportWeeklyReport, exportMonthlyReport } from "../utils/exportUtils";
 import { toast } from "sonner";
+
+// Local interface for grouped incidents
+interface GroupedIncident {
+  studentId: string;
+  studentName: string;
+  incidents: Incident[];
+}
 
 interface AllIncidentsProps {
   incidents: Incident[];
@@ -52,6 +59,50 @@ export function AllIncidents({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
+  // Repeat offender tracking
+  const [studentOffenseCounts, setStudentOffenseCounts] = useState<Record<string, number>>({});
+  const [groupedIncidents, setGroupedIncidents] = useState<GroupedIncident[]>([]);
+  
+  // Compute offense counts and group incidents by student when incidents change
+  useEffect(() => {
+    // Compute offense counts
+    const counts: Record<string, number> = {};
+    incidents.forEach(incident => {
+      const key = `${incident.studentId}-${incident.violationId}`;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    setStudentOffenseCounts(counts);
+    
+    // Group incidents by student
+    const grouped: Record<string, { studentId: string; studentName: string; incidents: Incident[] }> = {};
+    incidents.forEach(incident => {
+      const student = students.find(s => s.id === incident.studentId);
+      const studentName = student?.name || 'Unknown';
+      const key = incident.studentId;
+      
+      if (!grouped[key]) {
+        grouped[key] = {
+          studentId: incident.studentId,
+          studentName: studentName,
+          incidents: []
+        };
+      }
+      grouped[key].incidents.push(incident);
+    });
+    
+    // Convert to array and sort by student name
+    const groupedArray = Object.values(grouped).sort((a, b) => 
+      a.studentName.localeCompare(b.studentName)
+    );
+    
+    // Sort incidents within each student by date (newest first)
+    groupedArray.forEach(group => {
+      group.incidents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    });
+    
+    setGroupedIncidents(groupedArray);
+  }, [incidents, students]);
+  
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "Category 3 Offense": return "destructive";
@@ -68,30 +119,61 @@ export function AllIncidents({
     }
   };
   
-  const filteredIncidents = incidents.filter((incident) => {
-    const student = students.find(s => s.id === incident.studentId);
-    const matchesSearch = 
-      student?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSeverity = severityFilter === "All" || incident.severity === severityFilter;
-    const matchesStatus = statusFilter === "All" || incident.status === statusFilter;
-    
-    return matchesSearch && matchesSeverity && matchesStatus;
-  });
+  // Filter grouped incidents based on search term, severity and status
+  const filteredGroupedIncidents: GroupedIncident[] = groupedIncidents
+    .map(group => {
+      const filteredIncidents = group.incidents.filter((incident: Incident) => {
+        const matchesSeverity = severityFilter === "All" || incident.severity === severityFilter;
+        const matchesStatus = statusFilter === "All" || incident.status === statusFilter;
+        return matchesSeverity && matchesStatus;
+      });
+      return { ...group, incidents: filteredIncidents };
+    })
+    .filter(group => {
+      // Filter by search term
+      const matchesSearch = !searchTerm || 
+        group.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        group.incidents.some((i: Incident) => 
+          i.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          i.description.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      return matchesSearch && group.incidents.length > 0;
+    });
   
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, severityFilter, statusFilter]);
   
-  // Pagination
-  const totalPages = Math.ceil(filteredIncidents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedIncidents = filteredIncidents
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(startIndex, startIndex + itemsPerPage);
+  // Pagination - count total incidents across all filtered groups
+  const totalFilteredIncidents = filteredGroupedIncidents.reduce((sum, group) => sum + group.incidents.length, 0);
+  const totalPages = Math.ceil(totalFilteredIncidents / itemsPerPage);
+  
+  // Paginate - get incidents from filtered groups
+  const paginatedGroups = (() => {
+    const result: typeof groupedIncidents = [];
+    let count = 0;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    for (const group of filteredGroupedIncidents) {
+      if (count >= endIndex) break;
+      
+      const groupStartIndex = count;
+      const groupEndIndex = count + group.incidents.length;
+      
+      if (groupEndIndex > startIndex) {
+        const sliceStart = Math.max(0, startIndex - groupStartIndex);
+        const sliceEnd = Math.min(group.incidents.length, endIndex - groupStartIndex);
+        result.push({
+          ...group,
+          incidents: group.incidents.slice(sliceStart, sliceEnd)
+        });
+      }
+      count = groupEndIndex;
+    }
+    return result;
+  })();
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -110,13 +192,16 @@ export function AllIncidents({
     }
   };
   
+  // Get all filtered incidents as flat array for export
+  const allFilteredIncidents = filteredGroupedIncidents.flatMap(group => group.incidents);
+  
   const handleExportCSV = () => {
-    exportToCSV(filteredIncidents, students);
+    exportToCSV(allFilteredIncidents, students);
     toast.success("Report exported to CSV");
   };
   
   const handleExportPDF = () => {
-    exportToPDF(filteredIncidents, students);
+    exportToPDF(allFilteredIncidents, students);
     toast.success("Report exported to PDF");
   };
 
@@ -223,39 +308,51 @@ export function AllIncidents({
                 <TableHead>Date</TableHead>
                 <TableHead>Student</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Severity</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Count</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reported By</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedIncidents.length === 0 ? (
+              {paginatedGroups.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No incidents found matching your filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedIncidents
-                  .map((incident) => {
-                    const student = students.find(s => s.id === incident.studentId);
-                    return (
+                paginatedGroups
+                  .map((group: GroupedIncident) => 
+                    group.incidents.map((incident: Incident, index: number) => (
                       <TableRow key={incident.id}>
+                        {index === 0 && (
+                          <TableCell rowSpan={group.incidents.length}>
+                            <button
+                              onClick={() => onSelectStudent(group.studentId)}
+                              className="hover:underline text-left"
+                            >
+                              {group.studentName}
+                            </button>
+                          </TableCell>
+                        )}
                         <TableCell>{format(new Date(incident.date), "MMM d, yyyy")}</TableCell>
-                        <TableCell>
-                          <button
-                            onClick={() => onSelectStudent(incident.studentId)}
-                            className="hover:underline text-left"
-                          >
-                            {student?.name}
-                          </button>
-                        </TableCell>
                         <TableCell>{incident.type}</TableCell>
                         <TableCell>
                           <Badge variant={getSeverityColor(incident.severity) as any}>
                             {incident.severity}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {studentOffenseCounts[`${incident.studentId}-${incident.violationId}`] > 1 ? (
+                            <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                              <Repeat className="h-3 w-3 mr-1" />
+                              {studentOffenseCounts[`${incident.studentId}-${incident.violationId}`]}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">1</span>
+                          )}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{incident.description}</TableCell>
                         <TableCell>
@@ -265,8 +362,8 @@ export function AllIncidents({
                         </TableCell>
                         <TableCell>{incident.reportedBy}</TableCell>
                       </TableRow>
-                    );
-                  })
+                    ))
+                  )
               )}
             </TableBody>
           </Table>
@@ -275,7 +372,7 @@ export function AllIncidents({
       
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground">
-          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredIncidents.length)} of {filteredIncidents.length} incidents
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalFilteredIncidents)} of {totalFilteredIncidents} incidents
         </div>
         <div className="flex items-center gap-2">
           <Button
