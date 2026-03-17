@@ -127,59 +127,68 @@ export function AddIncidentDialog({
           {/* Student Selection */}
           <div className="space-y-2">
             <Label htmlFor="student">Student</Label>
-            <div className="relative">
+            {preselectedStudentId ? (
               <Input
                 id="student"
                 value={studentSearchQuery}
-                onChange={(e) => {
-                  setStudentSearchQuery(e.target.value);
-                  setShowStudentDropdown(true);
-                  if (!e.target.value) {
-                    setFormData({ ...formData, studentId: "" });
-                  }
-                }}
-                onFocus={() => setShowStudentDropdown(true)}
-                onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                placeholder="Type student name..."
-                required
+                disabled
+                className="bg-muted cursor-not-allowed"
               />
-              {studentSearchQuery && (
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
-                  onClick={() => {
-                    setStudentSearchQuery("");
-                    setFormData({ ...formData, studentId: "" });
-                    setShowStudentDropdown(false);
+            ) : (
+              <div className="relative">
+                <Input
+                  id="student"
+                  value={studentSearchQuery}
+                  onChange={(e) => {
+                    setStudentSearchQuery(e.target.value);
+                    setShowStudentDropdown(true);
+                    if (!e.target.value) {
+                      setFormData({ ...formData, studentId: "" });
+                    }
                   }}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-              {showStudentDropdown && studentSearchQuery && (
-                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {students
-                    .filter(s => s.grade > 0 || s.class)
-                    .filter(s => 
-                      s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-                      s.class?.toLowerCase().includes(studentSearchQuery.toLowerCase())
-                    )
-                    .map((student) => (
-                      <div
-                        key={student.id}
-                        className="p-2 hover:bg-muted cursor-pointer"
-                        onMouseDown={() => {
-                          setFormData({ ...formData, studentId: student.id });
-                          setStudentSearchQuery(student.name);
-                          setShowStudentDropdown(false);
-                        }}
-                      >
-                        {student.name} - {student.class}
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
+                  onFocus={() => setShowStudentDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                  placeholder="Type student name..."
+                  required
+                />
+                {studentSearchQuery && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setStudentSearchQuery("");
+                      setFormData({ ...formData, studentId: "" });
+                      setShowStudentDropdown(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                {showStudentDropdown && studentSearchQuery && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                    {students
+                      .filter(s => s.grade > 0 || s.class)
+                      .filter(s => 
+                        s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                        s.class?.toLowerCase().includes(studentSearchQuery.toLowerCase())
+                      )
+                      .map((student) => (
+                        <div
+                          key={student.id}
+                          className="p-2 hover:bg-muted cursor-pointer"
+                          onMouseDown={() => {
+                            setFormData({ ...formData, studentId: student.id });
+                            setStudentSearchQuery(student.name);
+                            setShowStudentDropdown(false);
+                          }}
+                        >
+                          {student.name} - {student.class}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Incident Details Row */}

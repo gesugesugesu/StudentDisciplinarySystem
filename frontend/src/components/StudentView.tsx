@@ -6,6 +6,8 @@ import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { User, Mail, GraduationCap, LogOut, AlertCircle, Clock, CheckCircle, Phone } from "lucide-react";
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { useState } from "react";
 
 interface StudentViewProps {
   student: Student & {
@@ -22,6 +24,7 @@ interface StudentViewProps {
 }
 
 export function StudentView({ student, incidents, onLogout }: StudentViewProps) {
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   // The student prop now contains all the data fetched from the database
   const studentIncidents = incidents.filter(i => i.studentId === student.id);
   const pendingIncidents = studentIncidents.filter(i => i.status === "Pending").length;
@@ -77,10 +80,28 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
               <h1 className="text-lg">D-Manage: Student Portal</h1>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to log out? You will need to enter your email again to view your records.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onLogout}>
+                  Logout
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </header>
 

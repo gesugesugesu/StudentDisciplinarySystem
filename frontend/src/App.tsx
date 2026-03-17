@@ -22,6 +22,7 @@ import { Plus, LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./components/ui/alert-dialog";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 
 // Extended student type with additional database fields
@@ -49,6 +50,7 @@ export default function App() {
   // Authentication state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
@@ -342,10 +344,28 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleAdminLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to log out of your account? You will need to log in again to access the admin dashboard.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleAdminLogout}>
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>

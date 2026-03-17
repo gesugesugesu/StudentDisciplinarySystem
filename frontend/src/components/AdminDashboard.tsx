@@ -1072,7 +1072,7 @@ export function AdminDashboard() {
 
         <TabsContent value="records" className="space-y-4">
           {/* Offense Search Section */}
-          <Card className="p-4">
+          <Card className="p-4 overflow-visible">
             <div className="relative">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -1100,7 +1100,7 @@ export function AdminDashboard() {
               
               {/* Offense Suggestions Dropdown */}
               {showOffenseSuggestions && offenseSearchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
                   {offenseSearchResults.map((offense) => (
                     <div
                       key={offense.id}
