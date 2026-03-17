@@ -282,6 +282,28 @@ export function AdminDashboard() {
     }
   };
 
+  const handleApproveToUnderReview = async (incidentId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents/${incidentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'Under Review' })
+      });
+      if (response.ok) {
+        toast.success('Incident approved and now under review');
+        fetchIncidents();
+      } else {
+        toast.error('Failed to approve incident');
+      }
+    } catch (error) {
+      toast.error('Error approving incident');
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -892,6 +914,17 @@ export function AdminDashboard() {
                             <Pencil className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
+                          <Button
+                            size="sm"
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                            }}
+                            onClick={() => handleApproveToUnderReview(incident.id)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -935,6 +968,7 @@ export function AdminDashboard() {
                       <Badge variant={
                         incident.status === 'Resolved' ? 'default' :
                         incident.status === 'Pending' ? 'secondary' :
+                        incident.status === 'Under Review' ? 'outline' :
                         'outline'
                       }>
                         {incident.status}
@@ -1038,8 +1072,7 @@ export function AdminDashboard() {
 
         <TabsContent value="records" className="space-y-4">
           {/* Offense Search Section */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Search Students by Offense</h3>
+          <Card className="p-4">
             <div className="relative">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">

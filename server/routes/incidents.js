@@ -303,15 +303,21 @@ router.put('/:id', verifyToken, async (req, res) => {
       reportedByIdNum = currentCase.reported_by || null;
     }
     
+    // Ensure all values are properly handled (convert undefined to null)
+    const finalReportedBy = reportedByIdNum !== undefined ? reportedByIdNum : null;
+    
     // Use the existing values from the current case if no new values are provided
     const studentIdNum = studentId ? parseInt(studentId) : (currentCase.student_id || null);
+    const finalStudentId = studentIdNum !== undefined ? studentIdNum : null;
+    const dateValue = date || currentCase.date_reported || null;
+    const finalStatus = status || currentCase.case_status || 'Pending';
     
     // Use actionTaken or sanction, or keep existing action_taken
     const actionTakenValue = actionTaken || sanction || currentCase.action_taken || '';
     
     const result = await runQuery(
       'UPDATE disciplinary_cases SET student_id = ?, violation_id = ?, reported_by = ?, date_reported = ?, case_status = ?, action_taken = ? WHERE case_id = ?',
-      [studentIdNum, violation.id, reportedByIdNum, date, status, actionTakenValue, id]
+      [finalStudentId, violation.id, finalReportedBy, dateValue, finalStatus, actionTakenValue, id]
     );
 
     // If status is Resolved, also add the record to disciplinary_records
@@ -320,7 +326,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         // Check if a record already exists for this case
         let existingRecord = await getRow(
           'SELECT record_id FROM disciplinary_records WHERE student_id = ? AND violation_id = ? AND date_reported = ?',
-          [studentIdNum, violation.id, date]
+          [finalStudentId, violation.id, dateValue]
         );
         
         let recordId;
@@ -328,7 +334,7 @@ router.put('/:id', verifyToken, async (req, res) => {
           // Create a new disciplinary record
           const insertResult = await runQuery(
             'INSERT INTO disciplinary_records (student_id, violation_id, reported_by, date_reported, status) VALUES (?, ?, ?, ?, ?)',
-            [studentIdNum, violation.id, reportedByIdNum, date, 'Resolved']
+            [finalStudentId, violation.id, finalReportedBy, dateValue, 'Resolved']
           );
           recordId = insertResult.insertId;
         } else {
