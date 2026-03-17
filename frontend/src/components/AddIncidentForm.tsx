@@ -7,7 +7,7 @@ import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
 import { Incident, Severity, Status, Student, Violation } from "../types";
-import { FilePlus, AlertTriangle, Shield, Calendar, User, BookOpen, ClipboardList, Repeat, History, CheckCircle } from "lucide-react";
+import { FilePlus, AlertTriangle, Shield, Calendar, User, BookOpen, ClipboardList, Repeat, History, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddIncidentFormProps {
@@ -29,6 +29,8 @@ export function AddIncidentForm({
   } | null>(null);
   const [selectedViolationId, setSelectedViolationId] = useState<number | null>(null);
   const [loadingOffenseInfo, setLoadingOffenseInfo] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [formData, setFormData] = useState({
     studentId: preselectedStudentId || "",
     type: "" as string,
@@ -165,33 +167,69 @@ export function AddIncidentForm({
                 <User className="h-4 w-4 text-green-600 dark:text-green-400" />
                 Student
               </Label>
-              <Select
-                value={formData.studentId}
-                onValueChange={(value: string) => {
-                  setFormData({ ...formData, studentId: value });
-                  setSelectedViolationId(null);
-                  setOffenseInfo(null);
-                  // Fetch with offense-specific count if offense is already selected
-                  if (value && formData.type) {
-                    const selectedV = violations.find(v => v.name === formData.type);
-                    if (selectedV?.id) {
-                      fetchOffenseInfo(value, selectedV.id);
+              <div className="relative">
+                <Input
+                  id="student"
+                  value={studentSearchQuery}
+                  onChange={(e) => {
+                    setStudentSearchQuery(e.target.value);
+                    setShowStudentDropdown(true);
+                    if (!e.target.value) {
+                      setFormData({ ...formData, studentId: "" });
+                      setOffenseInfo(null);
                     }
-                  }
-                }}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.name} - {student.class}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  }}
+                  onFocus={() => setShowStudentDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                  placeholder="Type student name..."
+                  required
+                />
+                {studentSearchQuery && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setStudentSearchQuery("");
+                      setFormData({ ...formData, studentId: "" });
+                      setOffenseInfo(null);
+                      setShowStudentDropdown(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                {showStudentDropdown && studentSearchQuery && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                    {students
+                      .filter(s => 
+                        s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                        s.class?.toLowerCase().includes(studentSearchQuery.toLowerCase())
+                      )
+                      .map((student) => (
+                        <div
+                          key={student.id}
+                          className="p-2 hover:bg-muted cursor-pointer"
+                          onMouseDown={() => {
+                            setFormData({ ...formData, studentId: student.id });
+                            setStudentSearchQuery(student.name);
+                            setShowStudentDropdown(false);
+                            setSelectedViolationId(null);
+                            setOffenseInfo(null);
+                            // Fetch offense info if type is already selected
+                            if (formData.type) {
+                              const selectedV = violations.find(v => v.name === formData.type);
+                              if (selectedV?.id) {
+                                fetchOffenseInfo(student.id, selectedV.id);
+                              }
+                            }
+                          }}
+                        >
+                          {student.name} - {student.class}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
             
             {/* Repeat Offender Warning */}
@@ -313,9 +351,8 @@ export function AddIncidentForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Open">Open</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Under Review">Under Review</SelectItem>
-                    <SelectItem value="Resolved">Resolved</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

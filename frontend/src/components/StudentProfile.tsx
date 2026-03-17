@@ -198,8 +198,8 @@ export function StudentProfile({
         <Button onClick={onAddIncident}>Add Incident</Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 md:col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="p-6">
           <div className="flex items-start gap-6">
             <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <User className="h-10 w-10 text-primary" />
@@ -236,21 +236,6 @@ export function StudentProfile({
                   </Badge>
                 </div>
               </div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-6">
-          <h4 className="mb-3">Parent/Guardian Contact</h4>
-          <div className="space-y-2">
-            <p>{displayStudent.parentName || "Not available"}</p>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>{displayStudent.parentEmail || "Not available"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{displayStudent.parentPhone || "Not available"}</span>
             </div>
           </div>
         </Card>

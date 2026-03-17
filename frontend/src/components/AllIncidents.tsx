@@ -305,8 +305,8 @@ export function AllIncidents({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
                 <TableHead>Student</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Count</TableHead>

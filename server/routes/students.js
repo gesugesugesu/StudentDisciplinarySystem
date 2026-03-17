@@ -17,6 +17,7 @@ router.get('/', verifyToken, async (req, res) => {
              status,
              created_at
       FROM students
+      WHERE status = 'Active'
       ORDER BY last_name, first_name
     `);
 
