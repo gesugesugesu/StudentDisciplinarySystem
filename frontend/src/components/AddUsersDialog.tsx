@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Plus } from "lucide-react";
 import { UserRole } from "../types";
 import { toast } from "sonner";
+
+interface Course {
+  course_id: number;
+  course_name: string;
+  created_at: string;
+}
 
 interface AddUsersDialogProps {
   open: boolean;
@@ -26,11 +32,30 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
     educationLevel: "",
     yearLevel: "",
   });
+  const [courses, setCourses] = useState<Course[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showNewCourseInput, setShowNewCourseInput] = useState(false);
+  const [newCourseName, setNewCourseName] = useState("");
+
+  // Fetch courses from database
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/courses');
+        if (response.ok) {
+          const data = await response.json();
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -150,6 +175,35 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
     setFormData(prev => ({ ...prev, [field]: value as any }));
   };
 
+  const handleAddNewCourse = async () => {
+    if (!newCourseName.trim()) {
+      setError("Please enter a course name");
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course_name: newCourseName.trim() })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, course: data.course.course_name }));
+        setCourses(prev => [...prev, data.course]);
+        setNewCourseName("");
+        setShowNewCourseInput(false);
+        setError("");
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to add course');
+      }
+    } catch (err) {
+      setError('Error adding course. Please try again.');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -186,30 +240,20 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
               placeholder="Enter email"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={formData.role} onValueChange={(value: string) => handleInputChange('role', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Discipline Officer">Discipline Officer</SelectItem>
-                <SelectItem value="Student">Student</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {formData.role === 'Student' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number</Label>
-                <Input
-                  id="contactNumber"
-                  type="tel"
-                  value={formData.contactNumber}
-                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                  placeholder="Enter contact number"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={formData.role} onValueChange={(value: string) => handleInputChange('role', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Discipline Officer">Discipline Officer</SelectItem>
+                  <SelectItem value="Student">Student</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.role === 'Student' && (
               <div className="space-y-2">
                 <Label htmlFor="educationLevel">Education Level</Label>
                 <Select value={formData.educationLevel} onValueChange={(value: string) => handleInputChange('educationLevel', value)}>
@@ -222,17 +266,117 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                   </SelectContent>
                 </Select>
               </div>
-              {formData.educationLevel === 'College' && (
+            )}
+          </div>
+          {formData.role === 'Student' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="course">Course</Label>
+                  <Label htmlFor="contactNumber">Contact Number</Label>
                   <Input
-                    id="course"
-                    type="text"
-                    value={formData.course}
-                    onChange={(e) => handleInputChange('course', e.target.value)}
-                    placeholder="Enter course"
+                    id="contactNumber"
+                    type="tel"
+                    value={formData.contactNumber}
+                    onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                    placeholder="Enter contact number"
                   />
                 </div>
+                {formData.educationLevel === 'Senior High School' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="yearLevel">Grade Level</Label>
+                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select grade level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="11">Grade 11</SelectItem>
+                        <SelectItem value="12">Grade 12</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {formData.educationLevel === 'College' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="yearLevel">Year Level</Label>
+                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1st Year</SelectItem>
+                        <SelectItem value="2">2nd Year</SelectItem>
+                        <SelectItem value="3">3rd Year</SelectItem>
+                        <SelectItem value="4">4th Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              {formData.educationLevel === 'College' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="course">Course</Label>
+                    {!showNewCourseInput ? (
+                      <div className="flex gap-2">
+                        <Select 
+                          value={formData.course} 
+                          onValueChange={(value: string) => {
+                            if (value === 'add_new') {
+                              setShowNewCourseInput(true);
+                            } else {
+                              handleInputChange('course', value);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select course" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {courses.map((course) => (
+                              <SelectItem key={course.course_id} value={course.course_name}>
+                                {course.course_name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="add_new" className="text-primary">
+                              <div className="flex items-center gap-2">
+                                <Plus className="h-4 w-4" />
+                                <span>Add New Course</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          id="newCourse"
+                          type="text"
+                          value={newCourseName}
+                          onChange={(e) => setNewCourseName(e.target.value)}
+                          placeholder="Enter new course name"
+                          className="flex-1"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => {
+                            setShowNewCourseInput(false);
+                            setNewCourseName("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="button" 
+                          onClick={handleAddNewCourse}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
               {formData.educationLevel === 'Senior High School' && (
                 <div className="space-y-2">
@@ -266,56 +410,60 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
               )}
             </>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="flex">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Enter password"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                className="ml-2 p-2 flex items-center justify-center"
-                onMouseDown={() => setShowPassword(true)}
-                onMouseUp={() => setShowPassword(false)}
-                onMouseLeave={() => setShowPassword(false)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  placeholder="Enter password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                  onClick={() => setShowPassword(!showPassword)}
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <div className="flex">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                placeholder="Confirm password"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                className="ml-2 p-2 flex items-center justify-center"
-                onMouseDown={() => setShowConfirmPassword(true)}
-                onMouseUp={() => setShowConfirmPassword(false)}
-                onMouseLeave={() => setShowConfirmPassword(false)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  placeholder="Confirm password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onMouseDown={() => setShowConfirmPassword(true)}
+                  onMouseUp={() => setShowConfirmPassword(false)}
+                  onMouseLeave={() => setShowConfirmPassword(false)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

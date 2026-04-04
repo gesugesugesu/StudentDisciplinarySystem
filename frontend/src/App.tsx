@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, Link } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import { Dashboard } from "./components/Dashboard";
@@ -9,16 +9,13 @@ import { AllIncidents } from "./components/AllIncidents";
 import { AddIncidentDialog } from "./components/AddIncidentDialog";
 import { AddIncidentForm } from "./components/AddIncidentForm";
 import { EditIncidentDialog } from "./components/EditIncidentDialog";
-import { ParentNotificationDialog } from "./components/ParentNotificationDialog";
 import { Login } from "./components/Login";
 import { Register } from "./components/Register";
-import { StudentEmailDialog } from "./components/StudentEmailDialog";
 import { StudentView } from "./components/StudentView";
 import { AdminDashboard } from "./components/AdminDashboard";
-import { AddUsersDialog } from "./components/AddUsersDialog";
 // Removed mock data import
 import { Incident, CommunicationLog, UserRole, Student } from "./types";
-import { Plus, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
@@ -43,14 +40,12 @@ export default function App() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
-  const [isAddUsersDialogOpen, setIsAddUsersDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Authentication state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
@@ -283,10 +278,6 @@ export default function App() {
     setSelectedStudentId(null);
   };
   
-  const handleAddIncidentClick = () => {
-    setIsAddDialogOpen(true);
-  };
-  
   const selectedStudent = selectedStudentId 
     ? dbStudents.find((s: Student) => s.id === selectedStudentId)
     : null;
@@ -315,11 +306,6 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
-        <StudentEmailDialog
-          open={isStudentEmailDialogOpen}
-          onOpenChange={setIsStudentEmailDialogOpen}
-          onSubmit={handleStudentEmailSubmit}
-        />
       </>
     );
   }
@@ -447,24 +433,6 @@ export default function App() {
           incident={selectedIncident}
         />
       )}
-      
-      {isNotifyDialogOpen && selectedIncident && (
-        <ParentNotificationDialog
-          open={isNotifyDialogOpen}
-          onOpenChange={setIsNotifyDialogOpen}
-          onAddCommunication={handleAddCommunication}
-          student={dbStudents.find((s: Student) => s.id === selectedIncident.studentId)!}
-          incident={selectedIncident}
-        />
-      )}
-      
-      <AddUsersDialog
-        open={isAddUsersDialogOpen}
-        onOpenChange={setIsAddUsersDialogOpen}
-        onUserAdded={() => {
-          fetchStudents();
-        }}
-      />
     </div>
   );
 }

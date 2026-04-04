@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { ArrowLeft, User, Mail, GraduationCap, MoreVertical, Edit, Trash2, Bell, Phone, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Mail, GraduationCap, Bell, Phone, Download, Loader2 } from "lucide-react";
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -49,9 +49,8 @@ export function StudentProfile({
   incidents, 
   onBack, 
   onAddIncident,
-  onEditIncident,
   onDeleteIncident,
-  onNotifyParent,
+  
 }: StudentProfileProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [fetchedStudent, setFetchedStudent] = useState<FetchedStudent | null>(null);

@@ -439,4 +439,143 @@ router.get('/violations/list', verifyToken, async (req, res) => {
   }
 });
 
+// AI-powered sanction suggestion using Gemini
+router.post('/suggest-sanction', verifyToken, async (req, res) => {
+  try {
+    const { offenseCategory, offenseCount, studentHistory, violationName, violationDescription } = req.body;
+    
+    if (!offenseCategory || offenseCount === undefined) {
+      return res.status(400).json({ error: 'Missing required fields: offenseCategory and offenseCount' });
+    }
+    
+    // Predefined handbook rules for sanctions
+    const handbookRules = {
+      "Category 1": {
+        firstOffense: "Written Warning",
+        secondOffense: "1-Day Suspension",
+        thirdOffense: "3-Day Suspension",
+        fourthOffense: "5-Day Suspension with Parent Conference",
+        default: "Written Warning"
+      },
+      "Category 2": {
+        firstOffense: "1-Day Suspension",
+        secondOffense: "3-Day Suspension",
+        thirdOffense: "5-Day Suspension",
+        fourthOffense: "Long-term Suspension (7+ days)",
+        default: "1-Day Suspension"
+      },
+      "Category 3": {
+        firstOffense: "3-Day Suspension",
+        secondOffense: "5-Day Suspension",
+        thirdOffense: "Long-term Suspension (10+ days)",
+        fourthOffense: "Expulsion Recommendation",
+        default: "3-Day Suspension"
+      }
+    };
+    
+    // Map category from full name to key
+    const categoryMap = {
+      "Category 1 Offense": "Category 1",
+      "Category 2 Offense": "Category 2",
+      "Category 3 Offense": "Category 3"
+    };
+    
+    const categoryKey = categoryMap[offenseCategory] || offenseCategory;
+    const rules = handbookRules[categoryKey] || handbookRules["Category 1"];
+    
+    // Determine sanction based on offense count
+    let suggestedSanction;
+    let explanation;
+    
+    if (offenseCount === 0 || offenseCount === 1) {
+      suggestedSanction = rules.firstOffense;
+      explanation = `First offense for ${categoryKey} violation. Standard protocol requires a ${suggestedSanction}.`;
+    } else if (offenseCount === 2) {
+      suggestedSanction = rules.secondOffense;
+      explanation = `Second offense of this type. Based on the student handbook, repeat offenders receive a ${suggestedSanction}.`;
+    } else if (offenseCount === 3) {
+      suggestedSanction = rules.thirdOffense;
+      explanation = `Third offense indicates persistent behavior. The handbook mandates ${suggestedSanction}.`;
+    } else {
+      suggestedSanction = rules.fourthOffense;
+      explanation = `Multiple repeat offenses (${offenseCount} incidents). This escalated response is required per handbook guidelines.`;
+    }
+    
+    // Check for additional factors in student history
+    let additionalNotes = [];
+    if (studentHistory && studentHistory.length > 0) {
+      const totalPreviousIncidents = studentHistory.length;
+      if (totalPreviousIncidents >= 5) {
+        additionalNotes.push("⚠️ Student has extensive disciplinary history (5+ total incidents). Consider mandatory counseling.");
+      }
+      if (totalPreviousIncidents >= 3) {
+        additionalNotes.push("⚠️ Multiple different violations on record. Parent conference strongly recommended.");
+      }
+      
+      // Check for recent incidents (within last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const recentIncidents = studentHistory.filter(h => new Date(h.date_reported) > thirtyDaysAgo);
+      if (recentIncidents.length >= 2) {
+        additionalNotes.push("⚠️ Multiple recent incidents within 30 days. Consider escalating to prevent further violations.");
+      }
+    }
+    
+    // Use Gemini for AI enhancement if API key is available
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    
+    if (geminiApiKey && geminiApiKey.startsWith('AIza')) {
+      try {
+        const geminiPrompt = `You are a school disciplinary advisor. Based on the following case information, provide a brief additional recommendation (1-2 sentences) for the sanction:
+
+- Violation: ${violationName || 'Unknown'}
+- Category: ${offenseCategory}
+- Description: ${violationDescription || 'Not provided'}
+- Previous offense count for this type: ${offenseCount}
+- Total previous incidents: ${studentHistory?.length || 0}
+
+Keep your response concise and focused on rehabilitation and prevention.`;
+        
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: geminiPrompt }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 200
+              }
+            })
+          }
+        );
+        
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          const aiRecommendation = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (aiRecommendation) {
+            additionalNotes.push(`🤖 AI Insight: ${aiRecommendation}`);
+          }
+        }
+      } catch (aiError) {
+        console.error('Gemini API error:', aiError);
+        // Continue with rule-based suggestion even if AI fails
+      }
+    }
+    
+    res.json({
+      suggestedSanction,
+      explanation,
+      category: categoryKey,
+      offenseCount,
+      additionalNotes: additionalNotes.length > 0 ? additionalNotes : null,
+      basedOn: "ACTS Student Handbook 2025-2026"
+    });
+  } catch (error) {
+    console.error('Error generating sanction suggestion:', error);
+    res.status(500).json({ error: 'Failed to generate sanction suggestion' });
+  }
+});
+
 module.exports = router;

@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -24,11 +23,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/incidents', require('./routes/incidents'));
 app.use('/api/student-records', require('./routes/studentRecords'));
-app.use('/api/sanctions', require('./routes/sanctions'));
-app.use('/api/sanction-types', require('./routes/sanctions'));
-app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/violations', require('./routes/violations'));
+app.use('/api/courses', require('./routes/courses'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

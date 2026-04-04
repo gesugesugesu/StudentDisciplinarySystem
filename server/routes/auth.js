@@ -29,6 +29,18 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // If course is provided for College students, check if it exists in courses table and add if not
+    let finalCourse = course;
+    if (role === 'Student' && educationLevel === 'College' && course) {
+      const existingCourse = await getRow('SELECT course_id FROM courses WHERE course_name = ?', [course]);
+      if (!existingCourse) {
+        // Add the new course to the courses table
+        await runQuery('INSERT INTO courses (course_name) VALUES (?)', [course]);
+        console.log('New course added:', course);
+      }
+      finalCourse = course;
+    }
+
     // Validate role
     const validRoles = ['Discipline Officer', 'Student'];
     if (!validRoles.includes(role)) {
@@ -44,7 +56,6 @@ router.post('/register', async (req, res) => {
     }
 
     // Hash password
-    const bcrypt = require('bcryptjs');
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -62,7 +73,7 @@ router.post('/register', async (req, res) => {
 
       await runQuery(
         'INSERT INTO students (first_name, last_name, course, year_level, contact_number, email, education_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [firstName, lastName, course || null, parseInt(yearLevel), contactNumber, email, educationLevel, 'Active']
+        [firstName, lastName, finalCourse || null, parseInt(yearLevel), contactNumber, email, educationLevel, 'Active']
       );
     }
 

@@ -34,7 +34,6 @@ export type IncidentType =
   | "Other";
 
 export type Severity = "Category 1 Offense" | "Category 2 Offense" | "Category 3 Offense";
-export type ViolationCategory = "Uniform & Grooming" | "Behavior" | "Classroom Conduct" | "Academic" | "Attendance" | "Property" | "Safety";
 export type Status = "Open" | "Resolved" | "Under Review" | "Pending" | "Dismissed";
 
 export interface Student {
@@ -86,29 +85,17 @@ export interface Incident {
   communicationLogs?: CommunicationLog[];
 }
 
-export interface Violation {
-  id?: number;
-  name: string;
-  category: string | null;
-  severity: Severity;
-  description: string | null;
-}
-
-export interface StudentViolation {
-  id: string;
-  violationId: string;
-  type: string;
-  severity: Severity;
-  description: string;
-  status: Status;
-  reportedBy: string;
-  date: string;
-}
-
 export interface GroupedStudentRecord {
   studentId: string;
   studentName: string;
   grade: string;
   class: string;
-  violations: StudentViolation[];
+  violations: any[];
+}
+
+export interface Violation {
+  id: number;
+  name: string;
+  severity: string;
+  description?: string;
 }

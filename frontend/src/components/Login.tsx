@@ -4,7 +4,6 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { ShieldCheck, Eye, EyeOff } from "lucide-react";
@@ -26,17 +25,6 @@ export function Login({ onLogin }: LoginProps) {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
-
-  const validatePassword = (password: string) => {
-    // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
-    return passwordRegex.test(password);
-  };
-
-  const validateStudentId = (studentId: string) => {
-    const studentIdRegex = /^\d{5}$/;
-    return studentIdRegex.test(studentId);
   };
 
   const handleSubmit = async () => {
@@ -125,7 +113,7 @@ export function Login({ onLogin }: LoginProps) {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <div className="flex">
+              <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -133,11 +121,12 @@ export function Login({ onLogin }: LoginProps) {
                   value={formData.password}
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                  className="flex-1"
+                  className="pr-10"
                 />
                 <button
                   type="button"
-                  className="ml-2 p-2 flex items-center justify-center"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                  onClick={() => setShowPassword(!showPassword)}
                   onMouseDown={() => setShowPassword(true)}
                   onMouseUp={() => setShowPassword(false)}
                   onMouseLeave={() => setShowPassword(false)}

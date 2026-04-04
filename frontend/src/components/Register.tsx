@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Plus } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { UserRole } from "../types";
+
+interface Course {
+  course_id: number;
+  course_name: string;
+  created_at: string;
+}
 
 export function Register() {
   const [formData, setFormData] = useState({
@@ -22,11 +28,30 @@ export function Register() {
     educationLevel: "",
     yearLevel: "",
   });
+  const [courses, setCourses] = useState<Course[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showNewCourseInput, setShowNewCourseInput] = useState(false);
+  const [newCourseName, setNewCourseName] = useState("");
+
+  // Fetch courses from database
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/courses');
+        if (response.ok) {
+          const data = await response.json();
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -138,9 +163,38 @@ export function Register() {
     setFormData(prev => ({ ...prev, [field]: value as any }));
   };
 
+  const handleAddNewCourse = async () => {
+    if (!newCourseName.trim()) {
+      setError("Please enter a course name");
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course_name: newCourseName.trim() })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, course: data.course.course_name }));
+        setCourses(prev => [...prev, data.course]);
+        setNewCourseName("");
+        setShowNewCourseInput(false);
+        setError("");
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to add course');
+      }
+    } catch (err) {
+      setError('Error adding course. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4">
-      <Card className="w-full max-w-md p-8">
+      <Card className="w-full max-w-2xl p-8">
         <div className="flex flex-col items-center">
           <ImageWithFallback
             src={logo}
@@ -159,50 +213,42 @@ export function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => handleInputChange('fullName', e.target.value)}
-              placeholder="Enter your full name"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                placeholder="Enter your full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Enter your email"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              placeholder="Enter your email"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={formData.role} onValueChange={(value: string) => handleInputChange('role', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Discipline Officer">Discipline Officer</SelectItem>
-                <SelectItem value="Student">Student</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {formData.role === 'Student' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number</Label>
-                <Input
-                  id="contactNumber"
-                  type="tel"
-                  value={formData.contactNumber}
-                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                  placeholder="Enter your contact number"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={formData.role} onValueChange={(value: string) => handleInputChange('role', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Discipline Officer">Discipline Officer</SelectItem>
+                  <SelectItem value="Student">Student</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.role === 'Student' && (
               <div className="space-y-2">
                 <Label htmlFor="educationLevel">Education Level</Label>
                 <Select value={formData.educationLevel} onValueChange={(value: string) => handleInputChange('educationLevel', value)}>
@@ -215,100 +261,128 @@ export function Register() {
                   </SelectContent>
                 </Select>
               </div>
+            )}
+          </div>
+          {formData.role === 'Student' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contactNumber">Contact Number</Label>
+                  <Input
+                    id="contactNumber"
+                    type="tel"
+                    value={formData.contactNumber}
+                    onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                    placeholder="Enter your contact number"
+                  />
+                </div>
+                {formData.educationLevel === 'Senior High School' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="yearLevel">Grade Level</Label>
+                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your grade level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="11">Grade 11</SelectItem>
+                        <SelectItem value="12">Grade 12</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {formData.educationLevel === 'College' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="yearLevel">Year Level</Label>
+                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your year level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1st Year</SelectItem>
+                        <SelectItem value="2">2nd Year</SelectItem>
+                        <SelectItem value="3">3rd Year</SelectItem>
+                        <SelectItem value="4">4th Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
               {formData.educationLevel === 'College' && (
                 <div className="space-y-2">
                   <Label htmlFor="course">Course</Label>
-                  <Input
-                    id="course"
-                    type="text"
-                    value={formData.course}
-                    onChange={(e) => handleInputChange('course', e.target.value)}
-                    placeholder="Enter your course"
-                  />
-                </div>
-              )}
-              {formData.educationLevel === 'Senior High School' && (
-                <div className="space-y-2">
-                  <Label htmlFor="yearLevel">Grade Level</Label>
-                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                  <Select 
+                    value={formData.course} 
+                    onValueChange={(value: string) => handleInputChange('course', value)}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your grade level" />
+                      <SelectValue placeholder="Select your course" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="11">Grade 11</SelectItem>
-                      <SelectItem value="12">Grade 12</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {formData.educationLevel === 'College' && (
-                <div className="space-y-2">
-                  <Label htmlFor="yearLevel">Year Level</Label>
-                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your year level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
+                      {courses.map((course) => (
+                        <SelectItem key={course.course_id} value={course.course_name}>
+                          {course.course_name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
             </>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="flex">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Enter your password"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                className="ml-2 p-2 flex items-center justify-center"
-                onMouseDown={() => setShowPassword(true)}
-                onMouseUp={() => setShowPassword(false)}
-                onMouseLeave={() => setShowPassword(false)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  placeholder="Enter your password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                  onClick={() => setShowPassword(!showPassword)}
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <div className="flex">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                placeholder="Confirm your password"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                className="ml-2 p-2 flex items-center justify-center"
-                onMouseDown={() => setShowConfirmPassword(true)}
-                onMouseUp={() => setShowConfirmPassword(false)}
-                onMouseLeave={() => setShowConfirmPassword(false)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  placeholder="Confirm your password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onMouseDown={() => setShowConfirmPassword(true)}
+                  onMouseUp={() => setShowConfirmPassword(false)}
+                  onMouseLeave={() => setShowConfirmPassword(false)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

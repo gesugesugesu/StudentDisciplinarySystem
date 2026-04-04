@@ -209,6 +209,47 @@ async function ensureDefaultData() {
       console.log('Default violation added');
     }
 
+    // Create courses table if it doesn't exist
+    try {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS courses (
+          course_id INT PRIMARY KEY AUTO_INCREMENT,
+          course_name VARCHAR(100) NOT NULL UNIQUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+      `);
+      console.log('Created courses table');
+    } catch (error) {
+      // Table might already exist, ignore error
+    }
+
+    // Insert default courses if table is empty
+    try {
+      const [courseRows] = await pool.execute('SELECT COUNT(*) as count FROM courses');
+      if (courseRows[0].count === 0) {
+        const defaultCourses = [
+          'BSIT - Bachelor of Science in Information Technology',
+          'BSCS - Bachelor of Science in Computer Science',
+          'BSBA - Bachelor of Science in Business Administration',
+          'BSHRM - Bachelor of Science in Hotel and Restaurant Management',
+          'BSED - Bachelor of Secondary Education',
+          'BEED - Bachelor of Elementary Education',
+          'BSA - Bachelor of Science in Accounting',
+          'BSTM - Bachelor of Science in Tourism Management'
+        ];
+
+        for (const course of defaultCourses) {
+          try {
+            await pool.execute('INSERT INTO courses (course_name) VALUES (?)', [course]);
+          } catch (error) {
+            // Ignore duplicate errors
+          }
+        }
+        console.log('Default courses added');
+      }
+    } catch (error) {
+      // Table might not exist yet, ignore error
+    }
   } catch (error) {
     console.error('Error ensuring default data:', error.message);
   }
@@ -247,7 +288,6 @@ async function runQuery(sql, params = []) {
 
 module.exports = {
   initializeDatabase,
-  executeQuery,
   getRow,
   getAllRows,
   runQuery

@@ -1,12 +1,6 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "./ui/dropdown-menu";
 import { AlertCircle, Clock, CheckCircle, TrendingUp, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Incident, Student } from "../types";
@@ -19,11 +13,11 @@ interface DashboardProps {
 }
 
 export function Dashboard({ incidents, students }: DashboardProps) {
-  const openIncidents = incidents.filter(i => i.status === "Open").length;
+  const openIncidents = incidents.filter(i => i.status === "Pending").length;
   const underReview = incidents.filter(i => i.status === "Under Review").length;
   const resolved = incidents.filter(i => i.status === "Resolved").length;
   
-  const severeIncidents = incidents.filter(i => i.severity === "Severe").length;
+  const severeIncidents = incidents.filter(i => i.severity === "Category 3 Offense").length;
   
   // Incidents by type
   const typeData = incidents.reduce((acc, incident) => {
@@ -38,9 +32,9 @@ export function Dashboard({ incidents, students }: DashboardProps) {
   
   // Incidents by severity
   const severityData = [
-    { name: "Minor", value: incidents.filter(i => i.severity === "Minor").length, color: "#74c69d" },
-    { name: "Moderate", value: incidents.filter(i => i.severity === "Moderate").length, color: "#40916c" },
-    { name: "Severe", value: incidents.filter(i => i.severity === "Severe").length, color: "#1b4332" },
+    { name: "Category 1", value: incidents.filter(i => i.severity === "Category 1 Offense").length, color: "#74c69d" },
+    { name: "Category 2", value: incidents.filter(i => i.severity === "Category 2 Offense").length, color: "#40916c" },
+    { name: "Category 3", value: incidents.filter(i => i.severity === "Category 3 Offense").length, color: "#1b4332" },
   ];
   
   const handleExportCSV = () => {
@@ -73,52 +67,54 @@ export function Dashboard({ incidents, students }: DashboardProps) {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">Total Students</p>
-              <p className="mt-2">{students.length}</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
+      <div className="flex gap-1">
+        <Card className="flex-1 p-2 flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+            <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Students</p>
+            <p className="text-sm font-semibold">{students.length}</p>
           </div>
         </Card>
         
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">Open Cases</p>
-              <p className="mt-2">{openIncidents}</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
+        <Card className="flex-1 p-2 flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+            <AlertCircle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Pending</p>
+            <p className="text-sm font-semibold">{openIncidents}</p>
           </div>
         </Card>
         
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">Under Review</p>
-              <p className="mt-2">{underReview}</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
+        <Card className="flex-1 p-2 flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+            <Clock className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Review</p>
+            <p className="text-sm font-semibold">{underReview}</p>
           </div>
         </Card>
         
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">Resolved</p>
-              <p className="mt-2">{resolved}</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
+        <Card className="flex-1 p-2 flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+            <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Severe</p>
+            <p className="text-sm font-semibold">{severeIncidents}</p>
+          </div>
+        </Card>
+        
+        <Card className="flex-1 p-2 flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+            <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Resolved</p>
+            <p className="text-sm font-semibold">{resolved}</p>
           </div>
         </Card>
       </div>
@@ -172,13 +168,13 @@ export function Dashboard({ incidents, students }: DashboardProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <p>{student?.name}</p>
-                    <Badge variant={incident.severity === "Severe" ? "destructive" : incident.severity === "Moderate" ? "default" : "secondary"}>
+                    <Badge variant={incident.severity === "Category 3 Offense" ? "destructive" : incident.severity === "Category 2 Offense" ? "default" : "secondary"}>
                       {incident.severity}
                     </Badge>
                   </div>
                   <p className="text-muted-foreground mt-1">{incident.type} - {incident.description}</p>
                 </div>
-                <Badge variant={incident.status === "Open" ? "destructive" : incident.status === "Under Review" ? "default" : "secondary"}>
+                <Badge variant={incident.status === "Pending" ? "destructive" : incident.status === "Under Review" ? "default" : "secondary"}>
                   {incident.status}
                 </Badge>
               </div>

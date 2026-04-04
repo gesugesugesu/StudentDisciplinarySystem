@@ -6,8 +6,8 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
-import { Incident, Severity, Status, Violation } from "../types";
-import { Repeat, History, CheckCircle } from "lucide-react";
+import { Incident, Severity, Status, Violation, IncidentType } from "../types";
+import { Repeat, History, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 
 interface EditIncidentDialogProps {
   open: boolean;
@@ -33,6 +33,17 @@ export function EditIncidentDialog({
     previousIncidents: { case_id: number; date_reported: string; violation_name: string; category: string; case_status: string }[];
   } | null>(null);
   const [loadingOffenseInfo, setLoadingOffenseInfo] = useState(false);
+
+  // State for AI suggestion
+  const [aiSuggestion, setAiSuggestion] = useState<{
+    suggestedSanction: string;
+    explanation: string;
+    category: string;
+    offenseCount: number;
+    additionalNotes: string[] | null;
+    basedOn: string;
+  } | null>(null);
+  const [loadingAiSuggestion, setLoadingAiSuggestion] = useState(false);
 
   const API_BASE = 'http://localhost:5000/api';
 
@@ -117,6 +128,37 @@ export function EditIncidentDialog({
     }
   };
 
+  // Fetch AI sanction suggestion
+  const fetchAiSuggestion = async (offenseCategory: string, offenseCount: number, violationName: string, violationDescription?: string) => {
+    setLoadingAiSuggestion(true);
+    setAiSuggestion(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents/suggest-sanction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          offenseCategory,
+          offenseCount,
+          violationName,
+          violationDescription,
+          studentHistory: offenseInfo?.previousIncidents || []
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAiSuggestion(data);
+      }
+    } catch (error) {
+      console.error('Error fetching AI suggestion:', error);
+    } finally {
+      setLoadingAiSuggestion(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onEditIncident(formData);
@@ -128,10 +170,16 @@ export function EditIncidentDialog({
     const selectedViolation = violations.find(v => v.name === value);
     const selectedViolationId = violations.find(v => v.name === value)?.id;
     
+    // Validate severity is one of the allowed values
+    const validSeverities: Severity[] = ["Category 1 Offense", "Category 2 Offense", "Category 3 Offense"];
+    const severityValue = validSeverities.includes(selectedViolation?.severity as Severity) 
+      ? selectedViolation?.severity as Severity 
+      : "Category 1 Offense";
+    
     setFormData({
       ...formData,
-      type: value as any,
-      severity: selectedViolation?.severity || "Category 1 Offense"
+      type: value as IncidentType,
+      severity: severityValue
     });
     
     // Fetch offense-specific count if student is selected
@@ -318,8 +366,34 @@ export function EditIncidentDialog({
 
           {/* Sanction Section - Only show when status is Resolved */}
           {formData.status === 'Resolved' && (
-            <div className="space-y-2">
-              <Label htmlFor="edit-sanction">Assign Sanction</Label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-sanction">Assign Sanction</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                  onClick={() => {
+                    const selectedViolation = violations.find(v => v.name === formData.type);
+                    const violationDesc = selectedViolation?.description || '';
+                    fetchAiSuggestion(
+                      formData.severity,
+                      offenseInfo?.offenseCount || 0,
+                      formData.type,
+                      violationDesc
+                    );
+                  }}
+                  disabled={loadingAiSuggestion || !formData.severity}
+                >
+                  {loadingAiSuggestion ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  {loadingAiSuggestion ? 'Analyzing...' : 'Get AI Suggestion'}
+                </Button>
+              </div>
               <Input
                 id="edit-sanction"
                 value={formData.actionTaken || ''}
@@ -329,6 +403,47 @@ export function EditIncidentDialog({
               <p className="text-xs text-muted-foreground">
                 Type the sanction to assign to this student
               </p>
+              
+              {/* AI Suggestion Display */}
+              {aiSuggestion && (
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    <h4 className="font-semibold text-purple-800 dark:text-purple-200">
+                      Recommended Sanction
+                    </h4>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
+                    {aiSuggestion.suggestedSanction}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                    {aiSuggestion.explanation}
+                  </p>
+                  {aiSuggestion.additionalNotes && aiSuggestion.additionalNotes.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-purple-200 dark:border-purple-700">
+                      {aiSuggestion.additionalNotes.map((note, idx) => (
+                        <p key={idx} className="text-xs text-purple-700 dark:text-purple-300 mb-1">
+                          {note}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-2 pt-2 border-t border-purple-200 dark:border-purple-700">
+                    <p className="text-xs text-muted-foreground">
+                      Based on: {aiSuggestion.basedOn}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-purple-600 hover:text-purple-800 mt-2"
+                    onClick={() => setFormData({ ...formData, actionTaken: aiSuggestion.suggestedSanction })}
+                  >
+                    Apply this sanction
+                  </Button>
+                </div>
+              )}
             </div>
           )}
            

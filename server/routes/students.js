@@ -4,6 +4,17 @@ const { verifyToken } = require('./auth');
 
 const router = express.Router();
 
+// Helper function to format class level
+function formatClassLevel(yearLevel, educationLevel) {
+  if (!yearLevel) return '';
+  if (educationLevel === 'Senior High School') return `Grade ${yearLevel}`;
+  if (educationLevel === 'College') {
+    const suffixes = ['', 'st', 'nd', 'rd'];
+    return `${yearLevel}${suffixes[yearLevel] || 'th'} Year`;
+  }
+  return '';
+}
+
 // Get all students
 router.get('/', verifyToken, async (req, res) => {
   try {
@@ -22,17 +33,29 @@ router.get('/', verifyToken, async (req, res) => {
     `);
 
     // Transform to match frontend expectations
-    const transformedStudents = students.map(student => ({
-      id: student.id.toString(),
-      name: student.name,
-      grade: student.yearLevel || 0,
-      course: student.course || '',
-      class: student.yearLevel ? `Year ${student.yearLevel}` : '',
-      educationLevel: student.educationLevel || '',
-      email: student.email || '',
-      status: student.status,
-      createdAt: student.created_at
-    }));
+    const transformedStudents = students.map(student => {
+      let classLevel = '';
+      if (student.yearLevel) {
+        if (student.educationLevel === 'Senior High School') {
+          classLevel = `Grade ${student.yearLevel}`;
+        } else if (student.educationLevel === 'College') {
+          const suffixes = ['', 'st', 'nd', 'rd'];
+          const suffix = suffixes[student.yearLevel] || 'th';
+          classLevel = `${student.yearLevel}${suffix} Year`;
+        }
+      }
+      return {
+        id: student.id.toString(),
+        name: student.name,
+        grade: student.yearLevel || 0,
+        course: student.course || '',
+        class: classLevel,
+        educationLevel: student.educationLevel || '',
+        email: student.email || '',
+        status: student.status,
+        createdAt: student.created_at
+      };
+    });
 
     res.json(transformedStudents);
   } catch (error) {
