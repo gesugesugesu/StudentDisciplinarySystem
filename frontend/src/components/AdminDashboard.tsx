@@ -643,7 +643,7 @@ export function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="w-full overflow-x-auto flex-nowrap">
+        <TabsList className="w-full overflow-x-auto flex-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="users">All Users</TabsTrigger>
           <TabsTrigger value="incidents">Incident Reports</TabsTrigger>
           <TabsTrigger value="records">Student Records</TabsTrigger>
