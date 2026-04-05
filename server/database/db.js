@@ -66,8 +66,9 @@ async function createTables() {
     // Students table
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS students (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        name VARCHAR(100) NOT NULL,
+        student_id INT PRIMARY KEY AUTO_INCREMENT,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE,
         student_number VARCHAR(50) UNIQUE,
         year_level INT,
@@ -77,6 +78,7 @@ async function createTables() {
         parent_name VARCHAR(100),
         parent_email VARCHAR(100),
         parent_phone VARCHAR(20),
+        status ENUM('Active','Inactive') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     `);
@@ -108,7 +110,7 @@ async function createTables() {
         description TEXT,
         severity VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (student_id) REFERENCES students(id),
+        FOREIGN KEY (student_id) REFERENCES students(student_id),
         FOREIGN KEY (violation_id) REFERENCES violations(violation_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     `);
@@ -124,6 +126,35 @@ async function createTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     `);
     console.log('Sanction types table ready');
+    
+    // Disciplinary records table (for resolved cases)
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS disciplinary_records (
+        record_id INT PRIMARY KEY AUTO_INCREMENT,
+        student_id INT NOT NULL,
+        violation_id INT NOT NULL,
+        reported_by INT,
+        date_reported DATE NOT NULL,
+        status ENUM('Pending','Resolved') DEFAULT 'Resolved',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (student_id) REFERENCES students(student_id),
+        FOREIGN KEY (violation_id) REFERENCES violations(violation_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Disciplinary records table ready');
+    
+    // Sanctions table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS sanctions (
+        sanction_id INT PRIMARY KEY AUTO_INCREMENT,
+        record_id INT NOT NULL,
+        sanction_type VARCHAR(100),
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (record_id) REFERENCES disciplinary_records(record_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Sanctions table ready');
     
     // Courses table
     await pool.execute(`
@@ -145,7 +176,7 @@ async function createTables() {
         recipient_email VARCHAR(100),
         message TEXT,
         sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (student_id) REFERENCES students(id),
+        FOREIGN KEY (student_id) REFERENCES students(student_id),
         FOREIGN KEY (case_id) REFERENCES disciplinary_cases(case_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     `);
