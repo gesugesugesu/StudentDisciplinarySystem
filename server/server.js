@@ -13,7 +13,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGIN || '*').split(',').map(o => o
 const corsOptions = {
   origin: (origin, callback) => {
     const requestOrigin = (origin || '').replace(/\/$/, '');
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(requestOrigin)) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(requestOrigin)) {
       callback(null, true);
     } else {
       console.log(`CORS blocked: ${requestOrigin} not in ${allowedOrigins}`);
