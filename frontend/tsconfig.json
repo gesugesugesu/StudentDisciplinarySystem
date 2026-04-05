@@ -24,8 +24,7 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "figma:asset/*": ["./src/assets/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
