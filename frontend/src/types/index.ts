@@ -42,6 +42,8 @@ export interface Student {
   grade: number;
   class: string;
   email: string;
+  course?: string;
+  educationLevel?: string;
   avatar?: string;
   parentName?: string;
   parentEmail?: string;

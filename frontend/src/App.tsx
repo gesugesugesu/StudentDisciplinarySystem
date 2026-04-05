@@ -44,8 +44,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Authentication state
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    const token = localStorage.getItem('token');
+    return !!token;
+  });
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.role || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
@@ -170,6 +184,8 @@ export default function App() {
   };
   
   const handleAdminLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setIsAdminLoggedIn(false);
     setCurrentUserRole(null);
     setSelectedStudentId(null);

@@ -381,14 +381,12 @@ async function ensureDefaultData() {
       const [courseRows] = await pool.execute('SELECT COUNT(*) as count FROM courses');
       if (courseRows[0].count === 0) {
         const defaultCourses = [
-          'BSIT - Bachelor of Science in Information Technology',
-          'BSCS - Bachelor of Science in Computer Science',
-          'BSBA - Bachelor of Science in Business Administration',
-          'BSHRM - Bachelor of Science in Hotel and Restaurant Management',
-          'BSED - Bachelor of Secondary Education',
-          'BEED - Bachelor of Elementary Education',
-          'BSA - Bachelor of Science in Accounting',
-          'BSTM - Bachelor of Science in Tourism Management'
+          'BSIT',
+          'BSCS',
+          'BSBA',
+          'BSENTREP',
+          'BSOA',
+          'BSAIS',
         ];
 
         for (const course of defaultCourses) {
