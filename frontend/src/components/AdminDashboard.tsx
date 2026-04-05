@@ -635,19 +635,18 @@ export function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Admin Dashboard</h2>
-          <p className="text-muted-foreground">Manage users and view statistics</p>
+          <p className="text-muted-foreground text-sm">Manage users and view statistics</p>
         </div>
-        <Button onClick={refreshData} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
+        <Button onClick={refreshData} variant="outline" size="icon" className="h-10 w-10" style={{ backgroundColor: '#15803d', color: 'white' }}>
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users">All Users ({totalUsers})</TabsTrigger>
-          <TabsTrigger value="incidents">Incident Reports ({activeIncidents.length})</TabsTrigger>
-          <TabsTrigger value="records">Student Records ({totalStudentRecords})</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto flex-nowrap">
+          <TabsTrigger value="users">All Users</TabsTrigger>
+          <TabsTrigger value="incidents">Incident Reports</TabsTrigger>
+          <TabsTrigger value="records">Student Records</TabsTrigger>
           <TabsTrigger value="violations">Violation Management</TabsTrigger>
           <TabsTrigger value="stats">User Statistics</TabsTrigger>
         </TabsList>
@@ -680,21 +679,23 @@ export function AdminDashboard() {
                       </TableCell>
                       <TableCell>{new Date(user.createdAt || '').toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleViewUser(user)}
+                            className="text-xs"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="h-3 w-3 mr-1" />
                             View
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleEditUser(user)}
+                            className="text-xs"
                           >
-                            <Pencil className="h-4 w-4 mr-1" />
+                            <Pencil className="h-3 w-3 mr-1" />
                             Edit
                           </Button>
                           <Button
@@ -704,17 +705,19 @@ export function AdminDashboard() {
                               color: 'white',
                             }}
                             onClick={() => handleApproveUser(user.id)}
+                            className="text-xs"
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <span className="hidden sm:inline">Approve</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => handleRejectUser(user.id)}
+                            className="text-xs"
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
+                            <XCircle className="h-3 w-3 mr-1" />
+                            <span className="hidden sm:inline">Reject</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -729,11 +732,12 @@ export function AdminDashboard() {
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
               <h3 className="text-lg font-semibold">All Users ({totalUsers})</h3>
-              <Button size="sm" onClick={() => setIsAddUsersDialogOpen(true)}>
+              <Button size="sm" onClick={() => setIsAddUsersDialogOpen(true)} style={{ backgroundColor: '#15803d', color: 'white' }}>
                 <UserPlus className="h-4 w-4 mr-1" />
                 Add User
               </Button>
             </div>
+            <div className="overflow-x-auto">
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -806,24 +810,26 @@ export function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             
             {/* Pagination and Info */}
-            <div className="flex items-center justify-between p-4 border-t bg-muted/30">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-t bg-muted/30 gap-3">
               <span className="text-sm text-muted-foreground">
                 Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, allUsersSorted.length)} of {allUsersSorted.length} users
               </span>
               {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
+                    className="flex-shrink-0"
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    <span className="hidden sm:inline">Previous</span>
                   </Button>
-                  <div className="flex items-center gap-1 mx-2">
+                  <div className="flex items-center gap-1 mx-2 flex-shrink-0">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <Button
                         key={page}
@@ -841,8 +847,9 @@ export function AdminDashboard() {
                     size="sm"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
+                    className="flex-shrink-0"
                   >
-                    Next
+                    <span className="hidden sm:inline">Next</span>
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -896,22 +903,24 @@ export function AdminDashboard() {
                       <TableCell>{new Date(incident.date).toLocaleDateString()}</TableCell>
                       <TableCell>{incident.reportedBy}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleViewIncident(incident)}
+                            className="text-xs"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            <Eye className="h-3 w-3 mr-1" />
+                            <span className="hidden sm:inline">View</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleEditIncidentClick(incident)}
+                            className="text-xs"
                           >
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Edit
+                            <Pencil className="h-3 w-3 mr-1" />
+                            <span className="hidden sm:inline">Edit</span>
                           </Button>
                           <Button
                             size="sm"
@@ -920,9 +929,10 @@ export function AdminDashboard() {
                               color: 'white',
                             }}
                             onClick={() => handleApproveToUnderReview(incident.id)}
+                            className="text-xs"
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <span className="hidden sm:inline">Approve</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -938,6 +948,7 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
               <h3 className="text-lg font-semibold">All Incidents ({activeIncidents.length})</h3>
             </div>
+            <div className="overflow-x-auto">
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -1007,13 +1018,14 @@ export function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             {/* Pagination for Incidents */}
             {incidentsTotalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-t gap-3">
                 <p className="text-sm text-muted-foreground">
                   Showing {incidentsStartIndex + 1} to {Math.min(incidentsStartIndex + itemsPerPage, activeIncidents.length)} of {activeIncidents.length} incidents
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1021,7 +1033,7 @@ export function AdminDashboard() {
                     disabled={incidentsPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    <span className="hidden sm:inline ml-1">Previous</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -1029,7 +1041,7 @@ export function AdminDashboard() {
                     onClick={() => setIncidentsPage(incidentsPage + 1)}
                     disabled={incidentsPage === incidentsTotalPages}
                   >
-                    Next
+                    <span className="hidden sm:inline mr-1">Next</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -1038,32 +1050,32 @@ export function AdminDashboard() {
           </Card>
 
           {/* Incident Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Open</p>
+                  <p className="text-muted-foreground text-sm">Open</p>
                   <p className="text-2xl font-bold text-yellow-600">{openIncidents}</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-yellow-600" />
+                <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Resolved</p>
+                  <p className="text-muted-foreground text-sm">Resolved</p>
                   <p className="text-2xl font-bold text-green-600">{resolvedIncidents}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Under Review</p>
+                  <p className="text-muted-foreground text-sm">Under Review</p>
                   <p className="text-2xl font-bold text-blue-600">{underReviewIncidents}</p>
                 </div>
-                <Clock className="h-8 w-8 text-blue-600" />
+                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
             </Card>
           </div>
@@ -1073,7 +1085,7 @@ export function AdminDashboard() {
           {/* Offense Search Section */}
           <Card className="p-4 overflow-visible">
             <div className="relative">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                   <Input
@@ -1090,7 +1102,7 @@ export function AdminDashboard() {
                     variant="ghost"
                     size="sm"
                     onClick={clearOffenseSearch}
-                    className="px-2"
+                    className="px-2 self-stretch"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -1122,7 +1134,7 @@ export function AdminDashboard() {
           {/* Search Results Section */}
           {selectedOffense && (
             <Card className="overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b bg-muted/30 gap-2">
                 <div>
                   <h3 className="text-lg font-semibold">
                     Students with Offense: {selectedOffense.name}
@@ -1131,14 +1143,14 @@ export function AdminDashboard() {
                     {studentsByOffense.length} record(s) found
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleOffenseSortChange(offenseSortOrder === 'date_desc' ? 'date_asc' : 'date_desc')}
                   >
                     <ArrowUpDown className="h-4 w-4 mr-1" />
-                    {offenseSortOrder === 'date_desc' ? 'Newest First' : 'Oldest First'}
+                    {offenseSortOrder === 'date_desc' ? 'Newest' : 'Oldest'}
                   </Button>
                   <Button
                     variant="ghost"
@@ -1146,7 +1158,7 @@ export function AdminDashboard() {
                     onClick={clearOffenseSearch}
                   >
                     <X className="h-4 w-4 mr-1" />
-                    Clear
+                    <span className="hidden sm:inline">Clear</span>
                   </Button>
                 </div>
               </div>
@@ -1161,6 +1173,7 @@ export function AdminDashboard() {
                 </div>
               ) : (
                 <>
+                  <div className="overflow-x-auto">
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
@@ -1210,14 +1223,15 @@ export function AdminDashboard() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                   
                   {/* Pagination for Search Results */}
                   {offenseResultsTotalPages > 1 && (
-                    <div className="flex items-center justify-between p-4 border-t">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-t gap-3">
                       <p className="text-sm text-muted-foreground">
                         Showing {offenseResultsStartIndex + 1} to {Math.min(offenseResultsStartIndex + itemsPerPage, studentsByOffense.length)} of {studentsByOffense.length} records
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full sm:w-auto overflow-x-auto">
                         <Button
                           variant="outline"
                           size="sm"
@@ -1225,7 +1239,7 @@ export function AdminDashboard() {
                           disabled={offenseResultsPage === 1}
                         >
                           <ChevronLeft className="h-4 w-4" />
-                          Previous
+                          <span className="hidden sm:inline ml-1">Previous</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -1233,7 +1247,7 @@ export function AdminDashboard() {
                           onClick={() => setOffenseResultsPage(offenseResultsPage + 1)}
                           disabled={offenseResultsPage === offenseResultsTotalPages}
                         >
-                          Next
+                          <span className="hidden sm:inline mr-1">Next</span>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1249,6 +1263,7 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
               <h3 className="text-lg font-semibold">All Student Records ({totalStudentRecords})</h3>
             </div>
+            <div className="overflow-x-auto">
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -1337,13 +1352,14 @@ export function AdminDashboard() {
                 )}
               </TableBody>
             </Table>
+            </div>
             {/* Pagination for Student Records */}
             {studentRecordsTotalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-t gap-3">
                 <p className="text-sm text-muted-foreground">
                   Showing {studentRecordsStartIndex + 1} to {Math.min(studentRecordsStartIndex + itemsPerPage, studentRecords?.length || 0)} of {studentRecords?.length || 0} records
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1351,7 +1367,7 @@ export function AdminDashboard() {
                     disabled={studentRecordsPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    <span className="hidden sm:inline ml-1">Previous</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -1359,7 +1375,7 @@ export function AdminDashboard() {
                     onClick={() => setStudentRecordsPage(studentRecordsPage + 1)}
                     disabled={studentRecordsPage === studentRecordsTotalPages}
                   >
-                    Next
+                    <span className="hidden sm:inline mr-1">Next</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -1368,41 +1384,41 @@ export function AdminDashboard() {
           </Card>
 
           {/* Student Records Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Total Records</p>
+                  <p className="text-muted-foreground text-sm">Total Records</p>
                   <p className="text-2xl font-bold">{totalStudentRecords}</p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-600" />
+                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Pending</p>
+                  <p className="text-muted-foreground text-sm">Pending</p>
                   <p className="text-2xl font-bold text-yellow-600">{pendingStudentRecords}</p>
                 </div>
-                <Clock className="h-8 w-8 text-yellow-600" />
+                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Resolved</p>
+                  <p className="text-muted-foreground text-sm">Resolved</p>
                   <p className="text-2xl font-bold text-green-600">{resolvedStudentRecords}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Dismissed</p>
+                  <p className="text-muted-foreground text-sm">Dismissed</p>
                   <p className="text-2xl font-bold text-gray-600">{dismissedStudentRecords}</p>
                 </div>
-                <XCircle className="h-8 w-8 text-gray-600" />
+                <XCircle className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
               </div>
             </Card>
           </div>
@@ -1413,47 +1429,47 @@ export function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Total Users</p>
+                  <p className="text-muted-foreground text-sm">Total Users</p>
                   <p className="text-2xl font-bold">{totalUsers}</p>
                 </div>
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Approved</p>
+                  <p className="text-muted-foreground text-sm">Approved</p>
                   <p className="text-2xl font-bold text-green-600">{approvedCount}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Suspended</p>
+                  <p className="text-muted-foreground text-sm">Suspended</p>
                   <p className="text-2xl font-bold text-red-600">{suspendedCount}</p>
                 </div>
-                <UserX className="h-8 w-8 text-red-600" />
+                <UserX className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground">Pending</p>
+                  <p className="text-muted-foreground text-sm">Pending</p>
                   <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
                 </div>
-                <Clock className="h-8 w-8 text-yellow-600" />
+                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
               </div>
             </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <h3 className="text-lg font-semibold mb-4">Users by Role</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
@@ -1466,7 +1482,7 @@ export function AdminDashboard() {
               </ResponsiveContainer>
             </Card>
 
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <h3 className="text-lg font-semibold mb-4">Users by Status</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -1494,13 +1510,13 @@ export function AdminDashboard() {
 
       {/* View User Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[500px] w-[95%] sm:w-full">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
           </DialogHeader>
           {viewUser && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Name</label>
                   <p className="text-sm text-muted-foreground">{viewUser.name}</p>
@@ -1517,12 +1533,12 @@ export function AdminDashboard() {
                   <label className="text-sm font-medium">Status</label>
                   <p className="text-sm text-muted-foreground">{viewUser.status || 'Pending'}</p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-sm font-medium">Created At</label>
                   <p className="text-sm text-muted-foreground">{new Date(viewUser.createdAt || '').toLocaleString()}</p>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col sm:flex-row justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                   Close
                 </Button>
@@ -1541,7 +1557,7 @@ export function AdminDashboard() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[500px] w-[95%] sm:w-full">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
@@ -1597,11 +1613,11 @@ export function AdminDashboard() {
                   </SelectContent>
                 </Select>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button onClick={handleSaveEdit}>
+                <Button onClick={handleSaveEdit} className="w-full sm:w-auto">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -1612,13 +1628,13 @@ export function AdminDashboard() {
 
       {/* View Incident Dialog */}
       <Dialog open={isViewIncidentDialogOpen} onOpenChange={setIsViewIncidentDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[600px] w-[95%] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Incident Details</DialogTitle>
           </DialogHeader>
           {viewIncident && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Student Name</label>
                   <p className="text-sm text-muted-foreground">{viewIncident.studentName || viewIncident.studentId}</p>
@@ -1655,13 +1671,13 @@ export function AdminDashboard() {
                   <label className="text-sm font-medium">Reported By</label>
                   <p className="text-sm text-muted-foreground">{viewIncident.reportedBy}</p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-sm font-medium">Description</label>
                   <p className="text-sm text-muted-foreground">{viewIncident.description || 'No description provided'}</p>
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsViewIncidentDialogOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setIsViewIncidentDialogOpen(false)} className="w-full sm:w-auto">
                   Close
                 </Button>
                 <Button 
@@ -1670,6 +1686,7 @@ export function AdminDashboard() {
                     setIsViewIncidentDialogOpen(false);
                     handleEditIncidentClick(viewIncident);
                   }}
+                  className="w-full sm:w-auto"
                 >
                   <Pencil className="h-4 w-4 mr-1" />
                   Edit
@@ -1682,13 +1699,13 @@ export function AdminDashboard() {
 
       {/* View Student Record Dialog */}
       <Dialog open={isViewStudentRecordDialogOpen} onOpenChange={setIsViewStudentRecordDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[600px] w-[95%] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Student Record Details</DialogTitle>
           </DialogHeader>
           {viewStudentRecord && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Student Name</label>
                   <p className="text-sm text-muted-foreground">{viewStudentRecord.studentName || viewStudentRecord.studentId}</p>
@@ -1725,13 +1742,13 @@ export function AdminDashboard() {
                   <label className="text-sm font-medium">Reported By</label>
                   <p className="text-sm text-muted-foreground">{viewStudentRecord.reportedBy}</p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-sm font-medium">Description</label>
                   <p className="text-sm text-muted-foreground">{viewStudentRecord.description || 'No description provided'}</p>
                 </div>
               </div>
               <div className="flex justify-end pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsViewStudentRecordDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsViewStudentRecordDialogOpen(false)} className="w-full sm:w-auto">
                   Close
                 </Button>
               </div>
