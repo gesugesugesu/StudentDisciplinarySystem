@@ -9,7 +9,12 @@ const PORT = process.env.PORT || 5000;
 const { initializeDatabase } = require('./database/db');
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGIN || '*',
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
