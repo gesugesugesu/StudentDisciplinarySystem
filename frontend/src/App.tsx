@@ -349,8 +349,8 @@ export default function App() {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    <LogOut className="h-4 w-4 mr-0 sm:mr-2" />
+                    <span className="hidden sm:inline">Logout</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>

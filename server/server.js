@@ -27,7 +27,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check - respond immediately before database check
+// Health check - respond immediately (doesn't require database)
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
@@ -56,19 +56,16 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server after database initialization
-async function startServer() {
-  try {
-    await initializeDatabase();
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-startServer();
+// Initialize database in background
+initializeDatabase().catch(err => {
+  console.error('Database initialization failed:', err.message);
+});
+
+module.exports = app;
 
 module.exports = app;

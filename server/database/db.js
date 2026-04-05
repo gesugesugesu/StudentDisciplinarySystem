@@ -41,7 +41,6 @@ async function initializeDatabase() {
     dbConnection.release();
   } catch (error) {
     console.error('Error connecting to MySQL database:', error.message);
-    process.exit(1);
   }
 }
 
