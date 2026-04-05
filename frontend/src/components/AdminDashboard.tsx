@@ -642,14 +642,16 @@ export function AdminDashboard() {
         </Button>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="w-full overflow-x-auto flex-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsTrigger value="users">All Users</TabsTrigger>
-          <TabsTrigger value="incidents">Incident Reports</TabsTrigger>
-          <TabsTrigger value="records">Student Records</TabsTrigger>
-          <TabsTrigger value="violations">Violation Management</TabsTrigger>
-          <TabsTrigger value="stats">User Statistics</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="users" className="space-y-4 w-full">
+        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList className="inline-flex min-w-full w-auto">
+            <TabsTrigger value="users" className="flex-shrink-0">All Users</TabsTrigger>
+            <TabsTrigger value="incidents" className="flex-shrink-0">Incident Reports</TabsTrigger>
+            <TabsTrigger value="records" className="flex-shrink-0">Student Records</TabsTrigger>
+            <TabsTrigger value="violations" className="flex-shrink-0">Violation Management</TabsTrigger>
+            <TabsTrigger value="stats" className="flex-shrink-0">User Statistics</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="users" className="space-y-4">
           {/* Pending Approvals Section */}
