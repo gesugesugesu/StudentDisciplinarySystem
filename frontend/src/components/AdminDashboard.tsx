@@ -61,7 +61,12 @@ export function AdminDashboard() {
   const [loadingOffenseCounts, setLoadingOffenseCounts] = useState(false);
   const [studentRecordsOffenseCounts, setStudentRecordsOffenseCounts] = useState<Record<string, number>>({});
 
-  const API_BASE = 'http://localhost:5000/api';
+  import { toast } from "sonner";
+import { AddUsersDialog } from "./AddUsersDialog";
+import { ViolationManagement } from "./ViolationManagement";
+import { EditIncidentDialog } from "./EditIncidentDialog";
+import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown, Repeat } from "lucide-react";
+import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchUsers();

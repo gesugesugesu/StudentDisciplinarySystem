@@ -9,6 +9,7 @@ import { Eye, EyeOff, UserPlus, Plus } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { UserRole } from "../types";
+import API_BASE from '../config/api';
 
 interface Course {
   course_id: number;
@@ -41,7 +42,7 @@ export function Register() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/courses');
+        const response = await fetch(`${API_BASE}/courses`);
         if (response.ok) {
           const data = await response.json();
           setCourses(data);
@@ -115,7 +116,7 @@ export function Register() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +171,7 @@ export function Register() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/courses', {
+      const response = await fetch(`${API_BASE}/courses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ course_name: newCourseName.trim() })

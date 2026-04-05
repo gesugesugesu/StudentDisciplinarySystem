@@ -45,7 +45,9 @@ export function EditIncidentDialog({
   } | null>(null);
   const [loadingAiSuggestion, setLoadingAiSuggestion] = useState(false);
 
-  const API_BASE = 'http://localhost:5000/api';
+  import { Incident, Severity, Status, Violation, IncidentType } from "../types";
+import { Repeat, History, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchViolations();

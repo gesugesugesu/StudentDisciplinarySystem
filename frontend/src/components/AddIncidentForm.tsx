@@ -42,7 +42,8 @@ export function AddIncidentForm({
     reportedBy: "",
   });
   
-  const API_BASE = 'http://localhost:5000/api';
+  import { toast } from "sonner";
+import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchIncidentTypes();

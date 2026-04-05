@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import { exportStudentReport, exportStudentIncidentsCSV } from "../utils/exportUtils";
 import { toast } from "sonner";
+import API_BASE from '../config/api';
 
 interface StudentProfileProps {
   student: Student;
@@ -64,7 +65,7 @@ export function StudentProfile({
       setError(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/students/${student.id}`, {
+        const response = await fetch(`${API_BASE}/students/${student.id}`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Eye, EyeOff, UserPlus, Plus } from "lucide-react";
 import { UserRole } from "../types";
 import { toast } from "sonner";
+import API_BASE from '../config/api';
 
 interface Course {
   course_id: number;
@@ -45,7 +46,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/courses');
+        const response = await fetch(`${API_BASE}/courses`);
         if (response.ok) {
           const data = await response.json();
           setCourses(data);
@@ -114,7 +115,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +183,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/courses', {
+      const response = await fetch(`${API_BASE}/courses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ course_name: newCourseName.trim() })

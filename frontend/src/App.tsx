@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./components/ui/alert-dialog";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
+import API_BASE from './config/api';
 
 // Extended student type with additional database fields
 interface FetchedStudent extends Student {
@@ -54,7 +55,7 @@ export default function App() {
   const fetchStudents = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/students', {
+      const response = await fetch(`${API_BASE}/students`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
@@ -69,7 +70,7 @@ export default function App() {
   const fetchIncidents = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/incidents', {
+      const response = await fetch(`${API_BASE}/incidents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
@@ -99,7 +100,7 @@ export default function App() {
           const emailToQuery = user.email?.trim().toLowerCase();
           console.log('Fetching student data for email:', emailToQuery);
           
-          const response = await fetch(`http://localhost:5000/api/students/email/${encodeURIComponent(emailToQuery)}`, {
+          const response = await fetch(`${API_BASE}/students/email/${encodeURIComponent(emailToQuery)}`, {
             headers: { 
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -200,7 +201,7 @@ export default function App() {
   const handleAddIncident = async (newIncident: Omit<Incident, "id">) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/incidents', {
+      const response = await fetch(`${API_BASE}/incidents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

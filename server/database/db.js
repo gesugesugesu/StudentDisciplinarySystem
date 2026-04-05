@@ -1,6 +1,5 @@
 const mysql = require('mysql2/promise');
 
-// Create database connection pool
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -15,23 +14,146 @@ let pool;
 
 async function initializeDatabase() {
   try {
-    pool = mysql.createPool(dbConfig);
-
-    // Test the connection
+    // First connect without database to create it if needed
+    const tempConfig = { ...dbConfig, database: undefined };
+    pool = mysql.createPool(tempConfig);
+    
     const connection = await pool.getConnection();
+    console.log('Connected to MySQL server');
+    
+    // Create database if it doesn't exist
+    await pool.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    console.log(`Database "${dbConfig.database}" ready`);
+    
+    connection.release();
+    
+    // Now reconnect with the database
+    pool = mysql.createPool(dbConfig);
+    const dbConnection = await pool.getConnection();
     console.log('Connected to MySQL database');
-
+    
+    // Create tables if they don't exist
+    await createTables();
+    
     // Check if tables exist and create default data if needed
     await ensureDefaultData();
-
-    connection.release();
+    
+    dbConnection.release();
   } catch (error) {
     console.error('Error connecting to MySQL database:', error.message);
-    console.error('Please ensure:');
-    console.error('1. XAMPP MySQL server is running');
-    console.error('2. Database "dmanage" exists');
-    console.error('3. Database credentials are correct in .env file');
     process.exit(1);
+  }
+}
+
+// Create tables if they don't exist
+async function createTables() {
+  try {
+    // Users table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        user_id INT PRIMARY KEY AUTO_INCREMENT,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        role ENUM('Super Admin','Discipline Officer','Student') DEFAULT 'Student',
+        full_name VARCHAR(100),
+        department VARCHAR(100),
+        status ENUM('pending','approved','rejected','suspended') DEFAULT 'approved',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Users table ready');
+    
+    // Students table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS students (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE,
+        student_number VARCHAR(50) UNIQUE,
+        year_level INT,
+        course VARCHAR(100),
+        education_level ENUM('Senior High School','College') DEFAULT 'College',
+        contact_number VARCHAR(20),
+        parent_name VARCHAR(100),
+        parent_email VARCHAR(100),
+        parent_phone VARCHAR(20),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Students table ready');
+    
+    // Violations table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS violations (
+        violation_id INT PRIMARY KEY AUTO_INCREMENT,
+        violation_name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        description TEXT,
+        severity ENUM('Category 1 Offense','Category 2 Offense','Category 3 Offense') DEFAULT 'Category 1 Offense',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Violations table ready');
+    
+    // Incidents (disciplinary_cases) table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS disciplinary_cases (
+        case_id INT PRIMARY KEY AUTO_INCREMENT,
+        student_id INT NOT NULL,
+        violation_id INT NOT NULL,
+        reported_by INT,
+        date_reported DATE NOT NULL,
+        case_status ENUM('Pending','Resolved','Under Review') DEFAULT 'Pending',
+        action_taken TEXT,
+        description TEXT,
+        severity VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (student_id) REFERENCES students(id),
+        FOREIGN KEY (violation_id) REFERENCES violations(violation_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Disciplinary cases table ready');
+    
+    // Sanction types table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS sanction_types (
+        sanction_type_id INT PRIMARY KEY AUTO_INCREMENT,
+        sanction_name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        description TEXT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Sanction types table ready');
+    
+    // Courses table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS courses (
+        course_id INT PRIMARY KEY AUTO_INCREMENT,
+        course_name VARCHAR(100) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Courses table ready');
+    
+    // Communication logs table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS communication_logs (
+        log_id INT PRIMARY KEY AUTO_INCREMENT,
+        student_id INT NOT NULL,
+        case_id INT,
+        recipient_name VARCHAR(100),
+        recipient_email VARCHAR(100),
+        message TEXT,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (student_id) REFERENCES students(id),
+        FOREIGN KEY (case_id) REFERENCES disciplinary_cases(case_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Communication logs table ready');
+    
+    console.log('All tables created successfully');
+  } catch (error) {
+    console.error('Error creating tables:', error.message);
   }
 }
 

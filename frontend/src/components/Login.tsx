@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { ShieldCheck, Eye, EyeOff } from "lucide-react";
+import API_BASE from '../config/api';
 
 interface LoginProps {
   onLogin: (user: any) => void;
@@ -45,7 +46,7 @@ export function Login({ onLogin }: LoginProps) {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

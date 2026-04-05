@@ -38,7 +38,8 @@ export function AddIncidentDialog({
     reportedBy: "",
   });
   
-  const API_BASE = 'http://localhost:5000/api';
+  import { X } from "lucide-react";
+import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchIncidentTypes();
