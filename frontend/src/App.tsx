@@ -18,7 +18,6 @@ import { Incident, CommunicationLog, UserRole, Student } from "./types";
 import { LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
-import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./components/ui/alert-dialog";
 import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import API_BASE from './config/api';
@@ -320,7 +319,7 @@ export default function App() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ImageWithFallback 
+              <img 
                 src={logo} 
                 alt="ACTS Computer College" 
                 className="h-12 w-12"
