@@ -6,8 +6,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Eye, EyeOff, UserPlus, Plus } from "lucide-react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
+import logo from "../assets/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { UserRole } from "../types";
 import API_BASE from '../config/api';
 
@@ -197,7 +196,7 @@ export function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4">
       <Card className="w-full max-w-2xl p-8">
         <div className="flex flex-col items-center">
-          <ImageWithFallback
+          <img
             src={logo}
             alt="ACTS Computer College"
             className="h-32 w-32 mb-4"

@@ -1,8 +1,7 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
+import logo from "../assets/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { User, Mail, GraduationCap, LogOut, AlertCircle, Clock, CheckCircle, Phone } from "lucide-react";
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
@@ -71,7 +70,7 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
       <header className="bg-white border-b shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <ImageWithFallback 
+            <img 
               src={logo} 
               alt="ACTS Computer College" 
               className="h-12 w-12"

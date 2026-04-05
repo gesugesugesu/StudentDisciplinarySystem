@@ -19,7 +19,7 @@ import { LogOut } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./components/ui/alert-dialog";
-import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
+import logo from "./assets/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import API_BASE from './config/api';
 
 // Extended student type with additional database fields

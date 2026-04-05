@@ -4,8 +4,7 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import logo from "figma:asset/6ca5c626f02129b600665afa033d23b2d70032b4.png";
+import logo from "../assets/6ca5c626f02129b600665afa033d23b2d70032b4.png";
 import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 import API_BASE from '../config/api';
 
@@ -83,7 +82,7 @@ export function Login({ onLogin }: LoginProps) {
 
       <Card className="w-full max-w-md p-8">
         <div className="flex flex-col items-center">
-          <ImageWithFallback
+          <img
             src={logo}
             alt="ACTS Computer College"
             className="h-32 w-32 mb-4"
