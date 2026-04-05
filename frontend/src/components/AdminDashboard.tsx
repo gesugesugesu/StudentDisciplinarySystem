@@ -16,6 +16,7 @@ import { AddUsersDialog } from "./AddUsersDialog";
 import { ViolationManagement } from "./ViolationManagement";
 import { EditIncidentDialog } from "./EditIncidentDialog";
 import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown, Repeat } from "lucide-react";
+import API_BASE from '../config/api';
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
@@ -60,13 +61,6 @@ export function AdminDashboard() {
   const [studentOffenseCounts, setStudentOffenseCounts] = useState<Record<string, number>>({});
   const [loadingOffenseCounts, setLoadingOffenseCounts] = useState(false);
   const [studentRecordsOffenseCounts, setStudentRecordsOffenseCounts] = useState<Record<string, number>>({});
-
-  import { toast } from "sonner";
-import { AddUsersDialog } from "./AddUsersDialog";
-import { ViolationManagement } from "./ViolationManagement";
-import { EditIncidentDialog } from "./EditIncidentDialog";
-import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown, Repeat } from "lucide-react";
-import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchUsers();

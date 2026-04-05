@@ -7,6 +7,7 @@ import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Incident, Severity, Status, Student, Violation } from "../types";
 import { X } from "lucide-react";
+import API_BASE from '../config/api';
 
 interface AddIncidentDialogProps {
   open: boolean;
@@ -37,9 +38,6 @@ export function AddIncidentDialog({
     status: "Pending" as Status,
     reportedBy: "",
   });
-  
-  import { X } from "lucide-react";
-import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchIncidentTypes();
@@ -71,7 +69,7 @@ import API_BASE from '../config/api';
           setFormData(prev => ({
             ...prev,
             type: data[0].name,
-            severity: data[0].severity
+            severity: data[0].severity as Severity
           }));
         }
       }
@@ -92,7 +90,7 @@ import API_BASE from '../config/api';
     setFormData({
       studentId: preselectedStudentId || "",
       type: violations[0]?.name || "",
-      severity: violations[0]?.severity || "Category 1 Offense",
+      severity: (violations[0]?.severity as Severity) || "Category 1 Offense",
       date: new Date().toISOString().split('T')[0],
       description: "",
       actionTaken: "",
@@ -109,7 +107,7 @@ import API_BASE from '../config/api';
     setFormData({
       ...formData,
       type: value,
-      severity: selectedViolation?.severity || "Category 1 Offense"
+      severity: (selectedViolation?.severity as Severity) || "Category 1 Offense"
     });
   };
 

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./ui/badge";
 import { Incident, Severity, Status, Violation, IncidentType } from "../types";
 import { Repeat, History, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import API_BASE from '../config/api';
 
 interface EditIncidentDialogProps {
   open: boolean;
@@ -44,10 +45,6 @@ export function EditIncidentDialog({
     basedOn: string;
   } | null>(null);
   const [loadingAiSuggestion, setLoadingAiSuggestion] = useState(false);
-
-  import { Incident, Severity, Status, Violation, IncidentType } from "../types";
-import { Repeat, History, CheckCircle, Sparkles, Loader2 } from "lucide-react";
-import API_BASE from '../config/api';
 
   useEffect(() => {
     fetchViolations();

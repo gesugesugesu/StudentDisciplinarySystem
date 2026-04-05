@@ -11,6 +11,7 @@ import { Badge } from "./ui/badge";
 import { Violation, Severity } from "../types";
 import { Plus, Pencil, Trash2, RefreshCw, AlertTriangle, BookOpen, FileText, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import API_BASE from '../config/api';
 
 // Handbook-based category mapping
 const category1Offenses = [
@@ -26,7 +27,7 @@ const category2Offenses = [
 ];
 
 const category3Offenses = [
-  "Exam Misrepresentation", "Assault on Faculty","Theft/Attempted Theft","Assault on Student",,
+  "Exam Misrepresentation", "Assault on Faculty","Theft/Attempted Theft","Assault on Student",
   "Hazing Participation", "Presence at hazing","Hazing leadership liability","Off-campus misconduct",
   "Moral turpitude", "Illegal organization membership", "Illegal Drugs possession/use", "Weapon possession/use" 
 ];
@@ -59,9 +60,6 @@ export function ViolationManagement() {
     description: "",
   });
 
-  import { toast } from "sonner";
-import API_BASE from '../config/api';
-
   useEffect(() => {
     fetchIncidentTypes();
   }, []);
@@ -89,7 +87,7 @@ import API_BASE from '../config/api';
       setSelectedViolation(violation);
       setFormData({
         name: violation.name,
-        severity: violation.severity,
+        severity: violation.severity as Severity,
         description: violation.description || "",
       });
     } else {
@@ -97,7 +95,7 @@ import API_BASE from '../config/api';
       setSelectedViolation(null);
       setFormData({
         name: "",
-        severity: "Category 1 Offense",
+        severity: "Category 1 Offense" as Severity,
         description: "",
       });
     }
