@@ -11,7 +11,16 @@ const { initializeDatabase } = require('./database/db');
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGIN || '*';
 const corsOptions = {
-  origin: allowedOrigins.split(',').map(o => o.trim()),
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const origins = allowedOrigins.split(',').map(o => o.trim().replace(/\/$/, ''));
+    const requestOrigin = origin.replace(/\/$/, '');
+    if (origins.includes(requestOrigin) || allowedOrigins === '*') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 };
 
