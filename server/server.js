@@ -9,8 +9,9 @@ const PORT = process.env.PORT || 5000;
 const { initializeDatabase } = require('./database/db');
 
 // Middleware
+const allowedOrigins = process.env.ALLOWED_ORIGIN || '*';
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGIN || '*',
+  origin: allowedOrigins.split(',').map(o => o.trim()),
   credentials: true,
 };
 
