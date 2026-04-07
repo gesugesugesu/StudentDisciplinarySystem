@@ -88,7 +88,6 @@ async function createTables() {
         violation_name VARCHAR(100) NOT NULL,
         category VARCHAR(50),
         description TEXT,
-        severity ENUM('Category 1 Offense','Category 2 Offense','Category 3 Offense') DEFAULT 'Category 1 Offense',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     `);
@@ -269,6 +268,8 @@ async function ensureDefaultData() {
       // Column might already have the correct enum, ignore error
     }
 
+
+
     // Check if old admin email exists and update to new one
     const [oldAdminRows] = await pool.execute(
       'SELECT user_id FROM users WHERE email = ?',
@@ -310,7 +311,7 @@ async function ensureDefaultData() {
       );
       console.log('Updated existing admin to Super Admin role and approved status');
     }
-
+    //
     // Create courses table if it doesn't exist
     try {
       await pool.execute(`
