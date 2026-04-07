@@ -125,6 +125,11 @@ router.get('/', verifyToken, async (req, res) => {
 // Get single disciplinary case by ID
 router.get('/:id', verifyToken, async (req, res) => {
   try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'Invalid case ID' });
+    }
+
     const record = await getRow(`
       SELECT dc.case_id as id,
              dc.student_id,
@@ -146,7 +151,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       LEFT JOIN violations v ON dc.violation_id = v.violation_id
       LEFT JOIN users u ON dc.reported_by = u.user_id
       WHERE dc.case_id = ?
-    `, [req.params.id]);
+    `, [id]);
 
     if (!record) {
       return res.status(404).json({ error: 'Case not found' });
@@ -258,7 +263,10 @@ router.post('/', verifyToken, async (req, res) => {
 // Update disciplinary case
 router.put('/:id', verifyToken, async (req, res) => {
   const { studentId, type, severity, date, description, status, reportedBy, actionTaken, sanction } = req.body;
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid case ID' });
+  }
 
   try {
     // First get the current case to find violation_id
@@ -412,7 +420,10 @@ router.put('/:id', verifyToken, async (req, res) => {
 
 // Delete disciplinary case
 router.delete('/:id', verifyToken, async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid case ID' });
+  }
 
   try {
     const result = await runQuery('DELETE FROM disciplinary_cases WHERE case_id = ?', [id]);

@@ -184,6 +184,11 @@ router.get('/', verifyToken, async (req, res) => {
 // Get single record by ID
 router.get('/:id', verifyToken, async (req, res) => {
   try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'Invalid record ID' });
+    }
+
     const record = await getRow(`
       SELECT dr.record_id as id,
              dr.student_id,
@@ -204,7 +209,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       LEFT JOIN violations v ON dr.violation_id = v.violation_id
       LEFT JOIN users u ON dr.reported_by = u.user_id
       WHERE dr.record_id = ?
-    `, [req.params.id]);
+    `, [id]);
 
     if (!record) {
       return res.status(404).json({ error: 'Record not found' });
