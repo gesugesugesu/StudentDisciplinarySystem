@@ -115,17 +115,6 @@ async function createTables() {
     `);
     console.log('Disciplinary cases table ready');
     
-    // Sanction types table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sanction_types (
-        sanction_type_id INT PRIMARY KEY AUTO_INCREMENT,
-        sanction_name VARCHAR(100) NOT NULL,
-        category VARCHAR(50),
-        description TEXT
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-    `);
-    console.log('Sanction types table ready');
-    
     // Disciplinary records table (for resolved cases)
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS disciplinary_records (
