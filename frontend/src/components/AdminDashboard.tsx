@@ -252,7 +252,8 @@ export function AdminDashboard() {
         toast.success('Incident approved and resolved');
         fetchIncidents();
       } else {
-        toast.error('Failed to approve incident');
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.error || 'Failed to approve incident');
       }
     } catch (error) {
       toast.error('Error approving incident');

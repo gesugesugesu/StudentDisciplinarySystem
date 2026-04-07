@@ -39,7 +39,6 @@ export default function App() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -257,11 +256,6 @@ export default function App() {
     toast.success("Incident deleted successfully");
   };
   
-  const handleNotifyParent = (incident: Incident) => {
-    setSelectedIncident(incident);
-    setIsNotifyDialogOpen(true);
-  };
-  
   const handleAddCommunication = (log: Omit<CommunicationLog, "id">) => {
     if (!selectedIncident) return;
     
@@ -384,7 +378,7 @@ export default function App() {
                 onAddIncident={() => setIsAddDialogOpen(true)}
                 onEditIncident={handleEditIncident}
                 onDeleteIncident={handleDeleteIncident}
-                onNotifyParent={handleNotifyParent}
+
               />
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -414,7 +408,6 @@ export default function App() {
                     onSelectStudent={handleSelectStudent}
                     onEditIncident={handleEditIncident}
                     onDeleteIncident={handleDeleteIncident}
-                    onNotifyParent={handleNotifyParent}
                   />
                 </TabsContent>
 
