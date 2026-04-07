@@ -74,6 +74,21 @@ export function AddIncidentForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If no student selected, try to match by exact name
+    if (!formData.studentId && studentSearchQuery) {
+      const matchedStudent = students.find(s => s.name.toLowerCase() === studentSearchQuery.toLowerCase());
+      if (matchedStudent) {
+        formData.studentId = matchedStudent.id;
+      }
+    }
+
+    // Check if student is found
+    if (!formData.studentId) {
+      toast.error("Student name not found in the system. Please check spelling or select from the dropdown list.");
+      return;
+    }
+
     onAddIncident({
       ...formData,
       type: formData.type as any,
@@ -89,6 +104,7 @@ export function AddIncidentForm({
       status: "Pending",
       reportedBy: "",
     });
+    setStudentSearchQuery("");
     setOffenseInfo(null);
   };
 

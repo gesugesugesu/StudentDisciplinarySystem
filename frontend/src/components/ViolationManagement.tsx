@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { Badge } from "./ui/badge";
 import { Violation, Severity } from "../types";
-import { Plus, Pencil, Trash2, RefreshCw, AlertTriangle, BookOpen, FileText, XCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle, BookOpen, FileText, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import API_BASE from '../config/api';
 
@@ -188,7 +188,7 @@ export function ViolationManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
             <BookOpen className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -198,61 +198,55 @@ export function ViolationManagement() {
             <p className="text-muted-foreground">Manage incident types based on school handbook</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchIncidentTypes}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Incident Type
-          </Button>
-        </div>
+        <Button onClick={() => handleOpenDialog()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Incident Type
+        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="flex gap-3">
-        <Card className="p-3 flex-1">
+      <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+        <Card className="p-2 min-w-0 flex-1 md:flex-none md:w-auto">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+              <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Types</p>
-              <p className="text-xl font-bold">{violations.length}</p>
+              <p className="text-lg font-bold md:text-xl">{violations.length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-3 flex-1">
+        <Card className="p-2 min-w-0 flex-1 md:flex-none md:w-auto">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <div className="h-6 w-6 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+              <AlertTriangle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Cat 1</p>
-              <p className="text-xl font-bold">{violations.filter(v => v.severity === 'Category 1 Offense').length}</p>
+              <p className="text-lg font-bold md:text-xl">{violations.filter(v => v.severity === 'Category 1 Offense').length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-3 flex-1">
+        <Card className="p-2 min-w-0 flex-1 md:flex-none md:w-auto">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-              <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            <div className="h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+              <AlertTriangle className="h-3 w-3 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Cat 2</p>
-              <p className="text-xl font-bold">{violations.filter(v => v.severity === 'Category 2 Offense').length}</p>
+              <p className="text-lg font-bold md:text-xl">{violations.filter(v => v.severity === 'Category 2 Offense').length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-3 flex-1">
+        <Card className="p-2 min-w-0 flex-1 md:flex-none md:w-auto">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <div className="h-6 w-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+              <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Cat 3</p>
-              <p className="text-xl font-bold">{violations.filter(v => v.severity === 'Category 3 Offense').length}</p>
+              <p className="text-lg font-bold md:text-xl">{violations.filter(v => v.severity === 'Category 3 Offense').length}</p>
             </div>
           </div>
         </Card>
@@ -264,7 +258,8 @@ export function ViolationManagement() {
           <CardTitle>All Incident Types</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -304,12 +299,8 @@ export function ViolationManagement() {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-          {violations.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No incident types found. Click "Add Incident Type" to create one.
-            </div>
-          )}
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

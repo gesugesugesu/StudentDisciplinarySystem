@@ -3,36 +3,33 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-f
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export function exportToCSV(incidents: Incident[], students: Student[], filename: string = "incidents-report.csv") {
+export function exportToCSV(incidents: Incident[], students: Student[], studentOffenseCounts: Record<string, number>, filename: string = "incidents-report.csv") {
   // Prepare CSV headers
   const headers = [
-    "Date",
     "Student Name",
-    "Grade",
-    "Class",
-    "Type",
+    "Course",
+    "Year Level",
+    "Incident Type",
     "Category",
-    "Description",
-    "Action Taken",
+    "Count",
     "Status",
-    "Reported By"
+    "Date"
   ];
 
   // Prepare CSV rows
   const rows = incidents.map(incident => {
     const student = students.find(s => s.id === incident.studentId);
-    
+    const count = studentOffenseCounts[`${incident.studentId}-${incident.violationId}`] || 1;
+
     return [
-      format(new Date(incident.date), "MM/dd/yyyy"),
       student?.name || "Unknown",
+      student?.course || "",
       student?.grade || "",
-      student?.class || "",
       incident.type,
       incident.severity,
-      incident.description,
-      incident.actionTaken,
+      count,
       incident.status,
-      incident.reportedBy
+      format(new Date(incident.date), "MM/dd/yyyy")
     ];
   });
 
@@ -55,45 +52,47 @@ export function exportToCSV(incidents: Incident[], students: Student[], filename
   document.body.removeChild(link);
 }
 
-export function exportToPDF(incidents: Incident[], students: Student[], filename: string = "incidents-report.pdf") {
+export function exportToPDF(incidents: Incident[], students: Student[], studentOffenseCounts: Record<string, number>, filename: string = "incidents-report.pdf") {
   const doc = new jsPDF();
-  
+
   // Add system logo/branding header
   doc.setFillColor(3, 2, 19); // Dark navy color from the system
   doc.rect(0, 0, 210, 25, 'F');
-  
+
   // Add system name
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.text("D-Manage: Computerized Student Disciplinary Management", 14, 12);
   doc.setFontSize(10);
   doc.text("Disciplinary Incidents Report", 14, 18);
-  
+
   // Reset text color for rest of document
   doc.setTextColor(0, 0, 0);
-  
+
   // Add generation date
   doc.setFontSize(10);
   doc.text(`Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}`, 14, 33);
-  
+
   // Prepare table data
   const tableData = incidents.map(incident => {
     const student = students.find(s => s.id === incident.studentId);
-    
+    const count = studentOffenseCounts[`${incident.studentId}-${incident.violationId}`] || 1;
+
     return [
-      format(new Date(incident.date), "MM/dd/yy"),
       student?.name || "Unknown",
-      `${student?.grade || ""}-${student?.class || ""}`,
+      student?.course || "",
+      student?.grade || "",
       incident.type,
       incident.severity,
+      count,
       incident.status,
-      incident.reportedBy
+      format(new Date(incident.date), "MM/dd/yy")
     ];
   });
 
   // Add table
   autoTable(doc, {
-    head: [["Date", "Student", "Grade", "Type", "Category", "Status", "Reported By"]],
+    head: [["Student Name", "Course", "Year Level", "Incident Type", "Category", "Count", "Status", "Date"]],
     body: tableData,
     startY: 40,
     styles: { fontSize: 8 },
@@ -266,9 +265,9 @@ export function exportWeeklyReport(incidents: Incident[], students: Student[], f
   const filename = `weekly-incidents-report-${format === 'csv' ? 'csv' : 'pdf'}`;
 
   if (format === 'csv') {
-    exportToCSV(weeklyIncidents, students, filename);
+    exportToCSV(weeklyIncidents, students, {}, filename);
   } else {
-    exportToPDF(weeklyIncidents, students, filename);
+    exportToPDF(weeklyIncidents, students, {}, filename);
   }
 }
 
@@ -277,8 +276,38 @@ export function exportMonthlyReport(incidents: Incident[], students: Student[], 
   const filename = `monthly-incidents-report-${format === 'csv' ? 'csv' : 'pdf'}`;
 
   if (format === 'csv') {
-    exportToCSV(monthlyIncidents, students, filename);
+    exportToCSV(monthlyIncidents, students, {}, filename);
   } else {
-    exportToPDF(monthlyIncidents, students, filename);
+    exportToPDF(monthlyIncidents, students, {}, filename);
   }
+}
+
+export function filterIncidentsByDate(incidents: Incident[], filterType: string, selectedDate: string): Incident[] {
+  if (filterType === "All") return incidents;
+
+  const date = new Date(selectedDate);
+
+  if (filterType === "Specific Date") {
+    return incidents.filter(incident =>
+      format(new Date(incident.date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
+    );
+  } else if (filterType === "Weekly") {
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+
+    return incidents.filter(incident => {
+      const incidentDate = new Date(incident.date);
+      return incidentDate >= weekStart && incidentDate <= weekEnd;
+    });
+  } else if (filterType === "Monthly") {
+    const monthStart = startOfMonth(date);
+    const monthEnd = endOfMonth(date);
+
+    return incidents.filter(incident => {
+      const incidentDate = new Date(incident.date);
+      return incidentDate >= monthStart && incidentDate <= monthEnd;
+    });
+  }
+
+  return incidents;
 }

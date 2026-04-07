@@ -12,6 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -24,7 +31,7 @@ import {
 import { Search, MoreVertical, Edit, Trash2, Bell, Download, ChevronLeft, ChevronRight, Repeat } from "lucide-react";
 import { Incident, Student, Severity, Status } from "../types";
 import { format } from "date-fns";
-import { exportToCSV, exportToPDF, exportWeeklyReport, exportMonthlyReport } from "../utils/exportUtils";
+import { exportToCSV, exportToPDF, exportWeeklyReport, exportMonthlyReport, filterIncidentsByDate } from "../utils/exportUtils";
 import { toast } from "sonner";
 
 // Local interface for grouped incidents
@@ -54,6 +61,10 @@ export function AllIncidents({
   const [incidentToDelete, setIncidentToDelete] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFilterType, setExportFilterType] = useState<"All" | "Specific Date" | "Weekly" | "Monthly">("All");
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [exportFormat, setExportFormat] = useState<"CSV" | "PDF">("CSV");
   
   // Repeat offender tracking
   const [studentOffenseCounts, setStudentOffenseCounts] = useState<Record<string, number>>({});
@@ -192,34 +203,15 @@ export function AllIncidents({
   // Get all filtered incidents as flat array for export
   const allFilteredIncidents = filteredGroupedIncidents.flatMap(group => group.incidents);
   
-  const handleExportCSV = () => {
-    exportToCSV(allFilteredIncidents, students);
-    toast.success("Report exported to CSV");
-  };
-  
-  const handleExportPDF = () => {
-    exportToPDF(allFilteredIncidents, students);
-    toast.success("Report exported to PDF");
-  };
-
-  const handleExportWeeklyCSV = () => {
-    exportWeeklyReport(incidents, students, 'csv');
-    toast.success("Weekly report exported to CSV");
-  };
-
-  const handleExportWeeklyPDF = () => {
-    exportWeeklyReport(incidents, students, 'pdf');
-    toast.success("Weekly report exported to PDF");
-  };
-
-  const handleExportMonthlyCSV = () => {
-    exportMonthlyReport(incidents, students, 'csv');
-    toast.success("Monthly report exported to CSV");
-  };
-
-  const handleExportMonthlyPDF = () => {
-    exportMonthlyReport(incidents, students, 'pdf');
-    toast.success("Monthly report exported to PDF");
+  const handleExport = () => {
+    const filteredIncidents = filterIncidentsByDate(allFilteredIncidents, exportFilterType, selectedDate);
+    if (exportFormat === "CSV") {
+      exportToCSV(filteredIncidents, students, studentOffenseCounts);
+    } else {
+      exportToPDF(filteredIncidents, students, studentOffenseCounts);
+    }
+    setExportDialogOpen(false);
+    toast.success(`Report exported to ${exportFormat}`);
   };
   
   return (
@@ -230,34 +222,10 @@ export function AllIncidents({
           <p className="text-muted-foreground">Complete record of all disciplinary incidents</p>
         </div>
         <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleExportCSV}>
-                Export All as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF}>
-                Export All as PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportWeeklyCSV}>
-                Export Weekly as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportWeeklyPDF}>
-                Export Weekly as PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportMonthlyCSV}>
-                Export Monthly as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportMonthlyPDF}>
-                Export Monthly as PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
         </div>
       </div>
       
@@ -410,6 +378,51 @@ export function AllIncidents({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Disciplinary Records</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Date Filter</label>
+              <Select value={exportFilterType} onValueChange={(value: "All" | "Specific Date" | "Weekly" | "Monthly") => setExportFilterType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Records</SelectItem>
+                  <SelectItem value="Specific Date">Specific Date</SelectItem>
+                  <SelectItem value="Weekly">Weekly</SelectItem>
+                  <SelectItem value="Monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {exportFilterType !== "All" && (
+              <div>
+                <label className="text-sm font-medium">Select Date</label>
+                <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium">Format</label>
+              <Select value={exportFormat} onValueChange={(value: "CSV" | "PDF") => setExportFormat(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CSV">CSV</SelectItem>
+                  <SelectItem value="PDF">PDF</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleExport}>Export</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
