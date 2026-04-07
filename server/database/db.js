@@ -56,7 +56,6 @@ async function createTables() {
         password VARCHAR(255) NOT NULL,
         role ENUM('Super Admin','Discipline Officer','Student') DEFAULT 'Student',
         full_name VARCHAR(100),
-        department VARCHAR(100),
         status ENUM('pending','approved','rejected','suspended') DEFAULT 'approved',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
@@ -73,7 +72,7 @@ async function createTables() {
         student_number VARCHAR(50) UNIQUE,
         year_level INT,
         course VARCHAR(100),
-        education_level ENUM('Senior High School','College') DEFAULT 'College',
+        education_level ENUM('College') DEFAULT 'College',
         contact_number VARCHAR(20),
         status ENUM('Active','Inactive') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
