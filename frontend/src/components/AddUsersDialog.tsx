@@ -203,7 +203,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -237,7 +237,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
               placeholder="Enter email"
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={formData.role} onValueChange={(value: string) => handleInputChange('role', value)}>
@@ -250,68 +250,65 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                 </SelectContent>
               </Select>
             </div>
-
+            {formData.role === 'Student' && (
+              <div className="space-y-2">
+                <Label htmlFor="yearLevel">Year Level</Label>
+                <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select year level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           {formData.role === 'Student' && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactNumber">Contact Number</Label>
-                  <Input
-                    id="contactNumber"
-                    type="tel"
-                    value={formData.contactNumber}
-                    onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                    placeholder="Enter contact number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="yearLevel">Year Level</Label>
-                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select year level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="contactNumber">Contact Number</Label>
+                <Input
+                  id="contactNumber"
+                  type="tel"
+                  value={formData.contactNumber}
+                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                  placeholder="Enter contact number"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="course">Course</Label>
                 {!showNewCourseInput ? (
-                  <div className="flex gap-2">
-                    <Select 
-                      value={formData.course} 
-                      onValueChange={(value: string) => {
-                        if (value === 'add_new') {
-                          setShowNewCourseInput(true);
-                        } else {
-                          handleInputChange('course', value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select course" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {courses.map((course) => (
-                          <SelectItem key={course.course_id} value={course.course_name}>
-                            {course.course_name}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="add_new" className="text-primary">
-                          <div className="flex items-center gap-2">
-                            <Plus className="h-4 w-4" />
-                            <span>Add New Course</span>
-                          </div>
+                  <Select
+                    value={formData.course}
+                    onValueChange={(value: string) => {
+                      if (value === 'add_new') {
+                        setShowNewCourseInput(true);
+                      } else {
+                        handleInputChange('course', value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((course) => (
+                        <SelectItem key={course.course_id} value={course.course_name}>
+                          {course.course_name}
                         </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      ))}
+                      <SelectItem value="add_new" className="text-primary">
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          <span>Add New Course</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <div className="flex gap-2">
                     <Input
@@ -322,9 +319,9 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                       placeholder="Enter new course name"
                       className="flex-1"
                     />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => {
                         setShowNewCourseInput(false);
                         setNewCourseName("");
@@ -332,8 +329,8 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       onClick={handleAddNewCourse}
                     >
                       <Plus className="h-4 w-4 mr-1" />
@@ -342,9 +339,9 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">

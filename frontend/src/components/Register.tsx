@@ -69,7 +69,7 @@ export function Register() {
     setSuccess("");
     setLoading(true);
 
-    const { email, password, confirmPassword, fullName, role, contactNumber, course, educationLevel, yearLevel } = formData;
+    const { email, password, confirmPassword, fullName, role, contactNumber, course, yearLevel } = formData;
 
     // Basic required fields validation
     if (!email || !password || !confirmPassword || !fullName || !role) {
@@ -192,7 +192,7 @@ export function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4">
-      <Card className="w-full max-w-2xl p-8">
+      <Card className="w-full max-w-md p-8">
         <div className="flex flex-col items-center">
           <img
             src={logo}
@@ -202,7 +202,7 @@ export function Register() {
           <h1 className="text-center mb-2">D-Manage: Computerized Student Disciplinary Management</h1>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
               <UserPlus className="h-5 w-5 text-primary" />
@@ -211,7 +211,7 @@ export function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
@@ -233,7 +233,7 @@ export function Register() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={formData.role} onValueChange={(value: string) => handleInputChange('role', value)}>
@@ -246,40 +246,39 @@ export function Register() {
                 </SelectContent>
               </Select>
             </div>
-
+            {formData.role === 'Student' && (
+              <div className="space-y-2">
+                <Label htmlFor="yearLevel">Year Level</Label>
+                <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your year level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           {formData.role === 'Student' && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactNumber">Contact Number</Label>
-                  <Input
-                    id="contactNumber"
-                    type="tel"
-                    value={formData.contactNumber}
-                    onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                    placeholder="Enter your contact number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="yearLevel">Year Level</Label>
-                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your year level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="contactNumber">Contact Number</Label>
+                <Input
+                  id="contactNumber"
+                  type="tel"
+                  value={formData.contactNumber}
+                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                  placeholder="Enter your contact number"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="course">Course</Label>
-                <Select 
-                  value={formData.course} 
+                <Select
+                  value={formData.course}
                   onValueChange={(value: string) => handleInputChange('course', value)}
                 >
                   <SelectTrigger>
@@ -294,7 +293,7 @@ export function Register() {
                   </SelectContent>
                 </Select>
               </div>
-            </>
+            </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
