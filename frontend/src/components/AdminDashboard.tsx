@@ -1512,35 +1512,35 @@ export function AdminDashboard() {
 
       {/* View User Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-[500px] w-[95%] sm:w-full">
+        <DialogContent className="max-w-[90vw] sm:max-w-md lg:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
           </DialogHeader>
           {viewUser && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Name</label>
-                  <p className="text-sm text-muted-foreground">{viewUser.name}</p>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-sm">Name</span>
+                  <span className="text-sm text-muted-foreground text-right">{viewUser.name}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <p className="text-sm text-muted-foreground">{viewUser.email}</p>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-sm">Email</span>
+                  <span className="text-sm text-muted-foreground text-right break-all">{viewUser.email}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Role</label>
-                  <p className="text-sm text-muted-foreground">{viewUser.role}</p>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-sm">Role</span>
+                  <span className="text-sm text-muted-foreground text-right">{viewUser.role}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <p className="text-sm text-muted-foreground">{viewUser.status || 'Pending'}</p>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-sm">Status</span>
+                  <span className="text-sm text-muted-foreground text-right">{viewUser.status || 'Pending'}</span>
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium">Created At</label>
-                  <p className="text-sm text-muted-foreground">{new Date(viewUser.createdAt || '').toLocaleString()}</p>
+                <div className="flex justify-between items-center py-2">
+                  <span className="font-medium text-sm">Created At</span>
+                  <span className="text-sm text-muted-foreground text-right">{new Date(viewUser.createdAt || '').toLocaleString()}</span>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                   Close
                 </Button>
@@ -1559,7 +1559,7 @@ export function AdminDashboard() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-[500px] w-[95%] sm:w-full">
+        <DialogContent className="max-w-[90vw] sm:max-w-md lg:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
@@ -1615,16 +1615,16 @@ export function AdminDashboard() {
                   </SelectContent>
                 </Select>
               </div>
-              <DialogFooter className="flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveEdit} className="w-full sm:w-auto">
-                  Save Changes
-                </Button>
-              </DialogFooter>
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save Changes
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
