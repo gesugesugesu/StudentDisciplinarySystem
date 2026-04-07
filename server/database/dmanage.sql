@@ -121,10 +121,7 @@ CREATE TABLE `students` (
   `contact_number` varchar(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `email` varchar(100) DEFAULT NULL,
-  `parent_name` varchar(100) DEFAULT NULL,
-  `parent_email` varchar(100) DEFAULT NULL,
-  `parent_phone` varchar(20) DEFAULT NULL,
-  `education_level` enum('Senior High School','College') DEFAULT 'College'
+  `education_level` enum('College') DEFAULT 'College'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

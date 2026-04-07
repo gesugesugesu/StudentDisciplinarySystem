@@ -131,9 +131,6 @@ export default function App() {
               email: user.email,
               grade: 0,
               class: '',
-              parentName: undefined,
-              parentEmail: undefined,
-              parentPhone: undefined,
               course: '',
               educationLevel: ''
             };
@@ -151,9 +148,6 @@ export default function App() {
             email: user.email,
             grade: 0,
             class: '',
-            parentName: undefined,
-            parentEmail: undefined,
-            parentPhone: undefined,
             course: '',
             educationLevel: ''
           };

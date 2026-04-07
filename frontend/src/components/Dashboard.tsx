@@ -1,11 +1,8 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { AlertCircle, Clock, CheckCircle, TrendingUp, Download } from "lucide-react";
+import { AlertCircle, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Incident, Student } from "../types";
-import { exportToCSV, exportToPDF } from "../utils/exportUtils";
-import { toast } from "sonner";
 
 interface DashboardProps {
   incidents: Incident[];
@@ -37,15 +34,7 @@ export function Dashboard({ incidents, students }: DashboardProps) {
     { name: "Category 3", value: incidents.filter(i => i.severity === "Category 3 Offense").length, color: "#1b4332" },
   ];
   
-  const handleExportCSV = () => {
-    exportToCSV(incidents, students);
-    toast.success("Report exported to CSV");
-  };
 
-  const handleExportPDF = () => {
-    exportToPDF(incidents, students);
-    toast.success("Report exported to PDF");
-  };
   
   return (
     <div className="space-y-6">
@@ -55,16 +44,7 @@ export function Dashboard({ incidents, students }: DashboardProps) {
           <p className="text-muted-foreground">Student disciplinary record statistics</p>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
-        </div>
+
       </div>
       
       <div className="flex gap-1">

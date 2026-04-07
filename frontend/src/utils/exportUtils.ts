@@ -158,15 +158,9 @@ export function exportStudentReport(student: Student, incidents: Incident[], fil
   doc.text(`Class: ${student.class}`, 14, 60);
   doc.text(`Email: ${student.email}`, 14, 67);
 
-  if (student.parentName) {
-    doc.text(`Parent: ${student.parentName}`, 14, 74);
-    doc.text(`Parent Email: ${student.parentEmail || "N/A"}`, 14, 81);
-    doc.text(`Parent Phone: ${student.parentPhone || "N/A"}`, 14, 88);
-  }
-
   // Incidents table
   doc.setFontSize(12);
-  doc.text("Incident History", 14, student.parentName ? 98 : 85);
+  doc.text("Incident History", 14, 74);
 
   const tableData = incidents.map(incident => {
     return [
@@ -181,7 +175,7 @@ export function exportStudentReport(student: Student, incidents: Incident[], fil
   autoTable(doc, {
     head: [["Date", "Type", "Category", "Description", "Status"]],
     body: tableData,
-    startY: student.parentName ? 103 : 90,
+    startY: 79,
     styles: { fontSize: 9 },
     headStyles: { fillColor: [3, 2, 19] },
     alternateRowStyles: { fillColor: [245, 245, 245] },

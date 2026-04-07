@@ -25,7 +25,6 @@ export function Register() {
     role: "" as UserRole | "",
     contactNumber: "",
     course: "",
-    educationLevel: "",
     yearLevel: "",
   });
   const [courses, setCourses] = useState<Course[]>([]);
@@ -80,15 +79,15 @@ export function Register() {
     }
 
     // Additional validation for students
-    if (role === 'Student' && (!contactNumber || !educationLevel || !yearLevel)) {
-      setError("Contact number, education level, and year level are required for students");
+    if (role === 'Student' && (!contactNumber || !yearLevel)) {
+      setError("Contact number and year level are required for students");
       setLoading(false);
       return;
     }
 
-    // Course is only required for College students
-    if (role === 'Student' && educationLevel === 'College' && !course) {
-      setError("Course is required for college students");
+    // Course is required for all students
+    if (role === 'Student' && !course) {
+      setError("Course is required for students");
       setLoading(false);
       return;
     }
@@ -127,9 +126,9 @@ export function Register() {
           role,
           ...(role === 'Student' && {
             contactNumber,
-            educationLevel,
+            educationLevel: 'College',
             yearLevel,
-            course: educationLevel === 'College' ? course : null,
+            course,
           }),
         }),
       });
@@ -146,7 +145,6 @@ export function Register() {
           role: "",
           contactNumber: "",
           course: "",
-          educationLevel: "",
           yearLevel: "",
         });
       } else {
@@ -248,20 +246,7 @@ export function Register() {
                 </SelectContent>
               </Select>
             </div>
-            {formData.role === 'Student' && (
-              <div className="space-y-2">
-                <Label htmlFor="educationLevel">Education Level</Label>
-                <Select value={formData.educationLevel} onValueChange={(value: string) => handleInputChange('educationLevel', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your education level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Senior High School">Senior High School</SelectItem>
-                    <SelectItem value="College">College</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+
           </div>
           {formData.role === 'Student' && (
             <>
@@ -276,57 +261,39 @@ export function Register() {
                     placeholder="Enter your contact number"
                   />
                 </div>
-                {formData.educationLevel === 'Senior High School' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="yearLevel">Grade Level</Label>
-                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your grade level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="11">Grade 11</SelectItem>
-                        <SelectItem value="12">Grade 12</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {formData.educationLevel === 'College' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="yearLevel">Year Level</Label>
-                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your year level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-              {formData.educationLevel === 'College' && (
                 <div className="space-y-2">
-                  <Label htmlFor="course">Course</Label>
-                  <Select 
-                    value={formData.course} 
-                    onValueChange={(value: string) => handleInputChange('course', value)}
-                  >
+                  <Label htmlFor="yearLevel">Year Level</Label>
+                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your course" />
+                      <SelectValue placeholder="Select your year level" />
                     </SelectTrigger>
                     <SelectContent>
-                      {courses.map((course) => (
-                        <SelectItem key={course.course_id} value={course.course_name}>
-                          {course.course_name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="1">1st Year</SelectItem>
+                      <SelectItem value="2">2nd Year</SelectItem>
+                      <SelectItem value="3">3rd Year</SelectItem>
+                      <SelectItem value="4">4th Year</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="course">Course</Label>
+                <Select 
+                  value={formData.course} 
+                  onValueChange={(value: string) => handleInputChange('course', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map((course) => (
+                      <SelectItem key={course.course_id} value={course.course_name}>
+                        {course.course_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

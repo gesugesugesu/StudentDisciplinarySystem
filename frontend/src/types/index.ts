@@ -45,9 +45,6 @@ export interface Student {
   course?: string;
   educationLevel?: string;
   avatar?: string;
-  parentName?: string;
-  parentEmail?: string;
-  parentPhone?: string;
 }
 
 export interface CommunicationLog {

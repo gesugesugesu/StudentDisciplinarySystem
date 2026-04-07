@@ -270,7 +270,7 @@ export function ViolationManagement() {
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -283,8 +283,8 @@ export function ViolationManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">{violation.description || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                   <TableCell className="text-center">
+                     <div className="flex justify-center gap-2 ml-2">
                       <Button
                         size="sm"
                         variant="outline"

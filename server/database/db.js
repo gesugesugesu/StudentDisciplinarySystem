@@ -74,9 +74,6 @@ async function createTables() {
         course VARCHAR(100),
         education_level ENUM('Senior High School','College') DEFAULT 'College',
         contact_number VARCHAR(20),
-        parent_name VARCHAR(100),
-        parent_email VARCHAR(100),
-        parent_phone VARCHAR(20),
         status ENUM('Active','Inactive') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
@@ -229,13 +226,7 @@ async function ensureDefaultData() {
       // Column might already exist, ignore error
     }
 
-    // Add parent_name column to students table if it doesn't exist
-    try {
-      await pool.execute('ALTER TABLE students ADD COLUMN parent_name VARCHAR(100)');
-      console.log('Added parent_name column to students table');
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
+
 
     // Add parent_email column to students table if it doesn't exist
     try {

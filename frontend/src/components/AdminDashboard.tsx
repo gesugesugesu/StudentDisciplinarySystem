@@ -1627,66 +1627,88 @@ export function AdminDashboard() {
 
       {/* View Incident Dialog */}
       <Dialog open={isViewIncidentDialogOpen} onOpenChange={setIsViewIncidentDialogOpen}>
-        <DialogContent className="max-w-[600px] w-[95%] sm:w-full max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[950px] w-full sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Incident Details</DialogTitle>
           </DialogHeader>
           {viewIncident && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Student Name</label>
-                  <p className="text-sm text-muted-foreground">{viewIncident.studentName || viewIncident.studentId}</p>
+            <div className="space-y-6">
+              {/* Main Information Grid - Responsive Layout */}
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 lg:gap-6">
+                {/* Student Information */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Student Name</label>
+                    <p className="text-sm text-muted-foreground font-medium">{viewIncident.studentName || viewIncident.studentId}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Violation Type</label>
+                    <p className="text-sm text-muted-foreground">{viewIncident.type}</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Violation Type</label>
-                  <p className="text-sm text-muted-foreground">{viewIncident.type}</p>
+
+                {/* Incident Details */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Category</label>
+                    <div className="mt-1">
+                      <Badge
+                        variant={viewIncident.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {viewIncident.severity}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Status</label>
+                    <div className="mt-1">
+                      <Badge
+                        variant={
+                          viewIncident.status === 'Resolved' ? 'default' :
+                          viewIncident.status === 'Pending' ? 'secondary' :
+                          'outline'
+                        }
+                        className="text-xs"
+                      >
+                        {viewIncident.status}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Category</label>
-                  <p className="text-sm text-muted-foreground">
-                    <Badge variant={viewIncident.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
-                      {viewIncident.severity}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <p className="text-sm text-muted-foreground">
-                    <Badge variant={
-                      viewIncident.status === 'Resolved' ? 'default' :
-                      viewIncident.status === 'Pending' ? 'secondary' :
-                      'outline'
-                    }>
-                      {viewIncident.status}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Date Reported</label>
-                  <p className="text-sm text-muted-foreground">{new Date(viewIncident.date).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Reported By</label>
-                  <p className="text-sm text-muted-foreground">{viewIncident.reportedBy}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <p className="text-sm text-muted-foreground">{viewIncident.description || 'No description provided'}</p>
+
+                {/* Reporting Information */}
+                <div className="space-y-3 md:col-span-2 lg:col-span-1">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Date Reported</label>
+                    <p className="text-sm text-muted-foreground">{new Date(viewIncident.date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Reported By</label>
+                    <p className="text-sm text-muted-foreground">{viewIncident.reportedBy}</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsViewIncidentDialogOpen(false)} className="w-full sm:w-auto">
+
+              {/* Description Section - Full Width */}
+              <div className="border-t pt-4">
+                <label className="text-sm font-medium text-foreground block mb-2">Description</label>
+                <div className="bg-muted/30 rounded-md p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {viewIncident.description || 'No description provided'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setIsViewIncidentDialogOpen(false)}>
                   Close
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setIsViewIncidentDialogOpen(false);
-                    handleEditIncidentClick(viewIncident);
-                  }}
-                  className="w-full sm:w-auto"
-                >
+                <Button onClick={() => {
+                  setIsViewIncidentDialogOpen(false);
+                  handleEditIncidentClick(viewIncident);
+                }}>
                   <Pencil className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
@@ -1698,56 +1720,82 @@ export function AdminDashboard() {
 
       {/* View Student Record Dialog */}
       <Dialog open={isViewStudentRecordDialogOpen} onOpenChange={setIsViewStudentRecordDialogOpen}>
-        <DialogContent className="max-w-[600px] w-[95%] sm:w-full max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[950px] w-full sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Student Record Details</DialogTitle>
           </DialogHeader>
           {viewStudentRecord && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Student Name</label>
-                  <p className="text-sm text-muted-foreground">{viewStudentRecord.studentName || viewStudentRecord.studentId}</p>
+            <div className="space-y-6">
+              {/* Main Information Grid - Responsive Layout */}
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 lg:gap-6">
+                {/* Student Information */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Student Name</label>
+                    <p className="text-sm text-muted-foreground font-medium">{viewStudentRecord.studentName || viewStudentRecord.studentId}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Violation Type</label>
+                    <p className="text-sm text-muted-foreground">{viewStudentRecord.type}</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Violation Type</label>
-                  <p className="text-sm text-muted-foreground">{viewStudentRecord.type}</p>
+
+                {/* Incident Details */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Category</label>
+                    <div className="mt-1">
+                      <Badge
+                        variant={viewStudentRecord.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {viewStudentRecord.severity}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Status</label>
+                    <div className="mt-1">
+                      <Badge
+                        variant={
+                          viewStudentRecord.status === 'Resolved' ? 'default' :
+                          viewStudentRecord.status === 'Dismissed' ? 'outline' :
+                          'secondary'
+                        }
+                        className="text-xs"
+                      >
+                        {viewStudentRecord.status}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Category</label>
-                  <p className="text-sm text-muted-foreground">
-                    <Badge variant={viewStudentRecord.severity === 'Category 3 Offense' ? 'destructive' : 'secondary'}>
-                      {viewStudentRecord.severity}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <p className="text-sm text-muted-foreground">
-                    <Badge variant={
-                      viewStudentRecord.status === 'Resolved' ? 'default' :
-                      viewStudentRecord.status === 'Dismissed' ? 'outline' :
-                      'secondary'
-                    }>
-                      {viewStudentRecord.status}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Date Reported</label>
-                  <p className="text-sm text-muted-foreground">{new Date(viewStudentRecord.date).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Reported By</label>
-                  <p className="text-sm text-muted-foreground">{viewStudentRecord.reportedBy}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <p className="text-sm text-muted-foreground">{viewStudentRecord.description || 'No description provided'}</p>
+
+                {/* Reporting Information */}
+                <div className="space-y-3 md:col-span-2 lg:col-span-1">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Date Reported</label>
+                    <p className="text-sm text-muted-foreground">{new Date(viewStudentRecord.date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Reported By</label>
+                    <p className="text-sm text-muted-foreground">{viewStudentRecord.reportedBy}</p>
+                  </div>
                 </div>
               </div>
+
+              {/* Description Section - Full Width */}
+              <div className="border-t pt-4">
+                <label className="text-sm font-medium text-foreground block mb-2">Description</label>
+                <div className="bg-muted/30 rounded-md p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {viewStudentRecord.description || 'No description provided'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Button */}
               <div className="flex justify-end pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsViewStudentRecordDialogOpen(false)} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setIsViewStudentRecordDialogOpen(false)}>
                   Close
                 </Button>
               </div>

@@ -48,20 +48,10 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
   
   // Helper function to format student level display
   const formatStudentLevel = () => {
-    const { educationLevel, course, class: classLevel } = student;
-    
-    // If we have valid data from database
-    if (educationLevel === 'College') {
-      return `College${course ? ` • ${course}` : ''}${classLevel && classLevel !== 'Unknown' ? ` • ${classLevel}` : ''}`;
-    }
-    if (educationLevel === 'Senior High School') {
-      return `Senior High School${classLevel && classLevel !== 'Unknown' ? ` • ${classLevel}` : ''}`;
-    }
-    if (classLevel && classLevel !== 'Unknown') {
-      return `Student • ${classLevel}`;
-    }
-    // Default fallback
-    return 'Student • Not Specified';
+    const { course, class: classLevel } = student;
+
+    // Since the system is now limited to college students
+    return `College${course ? ` • ${course}` : ''}${classLevel && classLevel !== 'Unknown' ? ` • ${classLevel}` : ''}`;
   };
   
   return (
@@ -258,30 +248,7 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
           )}
         </Card>
 
-        {/* Parent Contact Information */}
-        {student.parentName && (
-          <Card className="p-6">
-            <h3 className="mb-4">Parent/Guardian Information</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span>{student.parentName}</span>
-              </div>
-              {student.parentEmail && (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{student.parentEmail}</span>
-                </div>
-              )}
-              {student.parentPhone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{student.parentPhone}</span>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
+
       </main>
     </div>
   );

@@ -5,14 +5,10 @@ const { verifyToken } = require('./auth');
 const router = express.Router();
 
 // Helper function to format class level
-function formatClassLevel(yearLevel, educationLevel) {
+function formatClassLevel(yearLevel) {
   if (!yearLevel) return '';
-  if (educationLevel === 'Senior High School') return `Grade ${yearLevel}`;
-  if (educationLevel === 'College') {
-    const suffixes = ['', 'st', 'nd', 'rd'];
-    return `${yearLevel}${suffixes[yearLevel] || 'th'} Year`;
-  }
-  return '';
+  const suffixes = ['', 'st', 'nd', 'rd'];
+  return `${yearLevel}${suffixes[yearLevel] || 'th'} Year`;
 }
 
 // Get all students
@@ -38,13 +34,9 @@ router.get('/', verifyToken, async (req, res) => {
     const transformedStudents = students.map(student => {
       let classLevel = '';
       if (student.yearLevel) {
-        if (student.educationLevel === 'Senior High School') {
-          classLevel = `Grade ${student.yearLevel}`;
-        } else if (student.educationLevel === 'College') {
-          const suffixes = ['', 'st', 'nd', 'rd'];
-          const suffix = suffixes[student.yearLevel] || 'th';
-          classLevel = `${student.yearLevel}${suffix} Year`;
-        }
+        const suffixes = ['', 'st', 'nd', 'rd'];
+        const suffix = suffixes[student.yearLevel] || 'th';
+        classLevel = `${student.yearLevel}${suffix} Year`;
       }
       return {
         id: student.id.toString(),
@@ -52,7 +44,7 @@ router.get('/', verifyToken, async (req, res) => {
         grade: student.yearLevel || 0,
         course: student.course || '',
         class: classLevel,
-        educationLevel: student.educationLevel || '',
+        educationLevel: 'College',
         email: student.email || '',
         status: student.status,
         createdAt: student.created_at
@@ -78,9 +70,7 @@ router.get('/:id', verifyToken, async (req, res) => {
              s.education_level as educationLevel,
              s.email,
              s.contact_number,
-             s.parent_name,
-             s.parent_email,
-             s.parent_phone,
+
              s.status,
              s.created_at
       FROM students s
@@ -102,14 +92,12 @@ router.get('/:id', verifyToken, async (req, res) => {
       lastName: student.last_name,
       grade: student.yearLevel || 0,
       course: student.course || '',
-      class: student.yearLevel ? `Year ${student.yearLevel}` : '',
+      class: student.yearLevel ? `${student.yearLevel}th Year` : '',
       yearLevel: student.yearLevel,
-      educationLevel: student.educationLevel || '',
+      educationLevel: 'College',
       email: student.email || '',
       contactNumber: student.contact_number || '',
-      parentName: student.parent_name || '',
-      parentEmail: student.parent_email || '',
-      parentPhone: student.parent_phone || '',
+
       status: student.status,
       createdAt: student.created_at
     };
@@ -137,9 +125,7 @@ router.get('/email/:email', async (req, res) => {
              s.education_level as educationLevel,
              s.email,
              s.contact_number,
-             s.parent_name,
-             s.parent_email,
-             s.parent_phone,
+
              s.status,
              s.created_at
       FROM students s
@@ -186,7 +172,7 @@ router.get('/email/:email', async (req, res) => {
       });
     }
 
-    console.log('Student found:', student.email, 'Education:', student.educationLevel);
+    console.log('Student found:', student.email);
 
     // Transform to match frontend expectations
     const transformedStudent = {
@@ -196,14 +182,12 @@ router.get('/email/:email', async (req, res) => {
       lastName: student.last_name,
       grade: student.yearLevel || 0,
       course: student.course || '',
-      class: student.yearLevel ? `Year ${student.yearLevel}` : '',
+      class: student.yearLevel ? `${student.yearLevel}th Year` : '',
       yearLevel: student.yearLevel,
-      educationLevel: student.educationLevel || '',
+      educationLevel: 'College',
       email: student.email || '',
       contactNumber: student.contact_number || '',
-      parentName: student.parent_name || '',
-      parentEmail: student.parent_email || '',
-      parentPhone: student.parent_phone || '',
+
       status: student.status,
       createdAt: student.created_at
     };

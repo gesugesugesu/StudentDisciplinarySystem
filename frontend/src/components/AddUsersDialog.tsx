@@ -30,7 +30,6 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
     role: "" as UserRole | "",
     contactNumber: "",
     course: "",
-    educationLevel: "",
     yearLevel: "",
   });
   const [courses, setCourses] = useState<Course[]>([]);
@@ -74,7 +73,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
     setSuccess("");
     setLoading(true);
 
-    const { email, password, confirmPassword, fullName, role, contactNumber, course, educationLevel, yearLevel } = formData;
+    const { email, password, confirmPassword, fullName, role, contactNumber, course, yearLevel } = formData;
 
     if (!email || !password || !confirmPassword || !fullName || !role) {
       setError("Please fill in all required fields");
@@ -82,15 +81,15 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
       return;
     }
 
-    if (role === 'Student' && (!contactNumber || !educationLevel || !yearLevel)) {
-      setError("Contact number, education level, and year level are required for students");
+    if (role === 'Student' && (!contactNumber || !yearLevel)) {
+      setError("Contact number and year level are required for students");
       setLoading(false);
       return;
     }
 
-    // Course is only required for College students
-    if (role === 'Student' && educationLevel === 'College' && !course) {
-      setError("Course is required for college students");
+    // Course is required for all students
+    if (role === 'Student' && !course) {
+      setError("Course is required for students");
       setLoading(false);
       return;
     }
@@ -128,11 +127,9 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
           role,
           ...(role === 'Student' && {
             contactNumber,
-            educationLevel,
+            educationLevel: 'College',
             yearLevel,
-            ...(educationLevel === 'College' && {
-              course,
-            }),
+            course,
           }),
         }),
       });
@@ -149,7 +146,6 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
           role: "",
           contactNumber: "",
           course: "",
-          educationLevel: "",
           yearLevel: "",
         });
         toast.success("User added successfully");
@@ -254,20 +250,7 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                 </SelectContent>
               </Select>
             </div>
-            {formData.role === 'Student' && (
-              <div className="space-y-2">
-                <Label htmlFor="educationLevel">Education Level</Label>
-                <Select value={formData.educationLevel} onValueChange={(value: string) => handleInputChange('educationLevel', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select education level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Senior High School">Senior High School</SelectItem>
-                    <SelectItem value="College">College</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+
           </div>
           {formData.role === 'Student' && (
             <>
@@ -282,118 +265,6 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                     placeholder="Enter contact number"
                   />
                 </div>
-                {formData.educationLevel === 'Senior High School' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="yearLevel">Grade Level</Label>
-                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select grade level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="11">Grade 11</SelectItem>
-                        <SelectItem value="12">Grade 12</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {formData.educationLevel === 'College' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="yearLevel">Year Level</Label>
-                    <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-              {formData.educationLevel === 'College' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="course">Course</Label>
-                    {!showNewCourseInput ? (
-                      <div className="flex gap-2">
-                        <Select 
-                          value={formData.course} 
-                          onValueChange={(value: string) => {
-                            if (value === 'add_new') {
-                              setShowNewCourseInput(true);
-                            } else {
-                              handleInputChange('course', value);
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select course" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {courses.map((course) => (
-                              <SelectItem key={course.course_id} value={course.course_name}>
-                                {course.course_name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="add_new" className="text-primary">
-                              <div className="flex items-center gap-2">
-                                <Plus className="h-4 w-4" />
-                                <span>Add New Course</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Input
-                          id="newCourse"
-                          type="text"
-                          value={newCourseName}
-                          onChange={(e) => setNewCourseName(e.target.value)}
-                          placeholder="Enter new course name"
-                          className="flex-1"
-                        />
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => {
-                            setShowNewCourseInput(false);
-                            setNewCourseName("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          type="button" 
-                          onClick={handleAddNewCourse}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-              {formData.educationLevel === 'Senior High School' && (
-                <div className="space-y-2">
-                  <Label htmlFor="yearLevel">Grade Level</Label>
-                  <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select grade level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="11">Grade 11</SelectItem>
-                      <SelectItem value="12">Grade 12</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {formData.educationLevel === 'College' && (
                 <div className="space-y-2">
                   <Label htmlFor="yearLevel">Year Level</Label>
                   <Select value={formData.yearLevel} onValueChange={(value: string) => handleInputChange('yearLevel', value)}>
@@ -408,7 +279,69 @@ export function AddUsersDialog({ open, onOpenChange, onUserAdded }: AddUsersDial
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="course">Course</Label>
+                {!showNewCourseInput ? (
+                  <div className="flex gap-2">
+                    <Select 
+                      value={formData.course} 
+                      onValueChange={(value: string) => {
+                        if (value === 'add_new') {
+                          setShowNewCourseInput(true);
+                        } else {
+                          handleInputChange('course', value);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((course) => (
+                          <SelectItem key={course.course_id} value={course.course_name}>
+                            {course.course_name}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="add_new" className="text-primary">
+                          <div className="flex items-center gap-2">
+                            <Plus className="h-4 w-4" />
+                            <span>Add New Course</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      id="newCourse"
+                      type="text"
+                      value={newCourseName}
+                      onChange={(e) => setNewCourseName(e.target.value)}
+                      placeholder="Enter new course name"
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowNewCourseInput(false);
+                        setNewCourseName("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={handleAddNewCourse}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                )}
+              </div>
             </>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

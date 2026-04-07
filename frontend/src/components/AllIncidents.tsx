@@ -110,6 +110,7 @@ export function AllIncidents({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Open": return "destructive";
+      case "Pending": return "destructive";
       case "Under Review": return "default";
       default: return "secondary";
     }
@@ -120,7 +121,7 @@ export function AllIncidents({
     .map(group => {
       const filteredIncidents = group.incidents.filter((incident: Incident) => {
         const matchesSeverity = severityFilter === "All" || incident.severity === severityFilter;
-        const matchesStatus = statusFilter === "All" || incident.status === statusFilter;
+        const matchesStatus = statusFilter === "All" || (statusFilter === "Pending" && incident.status === "Open") || incident.status === statusFilter;
         return matchesSeverity && matchesStatus;
       });
       return { ...group, incidents: filteredIncidents };
@@ -289,7 +290,7 @@ export function AllIncidents({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">All Statuses</SelectItem>
-            <SelectItem value="Open">Open</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
             <SelectItem value="Under Review">Under Review</SelectItem>
             <SelectItem value="Resolved">Resolved</SelectItem>
           </SelectContent>
@@ -353,7 +354,7 @@ export function AllIncidents({
                         <TableCell className="max-w-xs truncate">{incident.description}</TableCell>
                         <TableCell>
                           <Badge variant={getStatusColor(incident.status) as any}>
-                            {incident.status}
+                            {incident.status === "Open" ? "Pending" : incident.status}
                           </Badge>
                         </TableCell>
                         <TableCell>{incident.reportedBy}</TableCell>
