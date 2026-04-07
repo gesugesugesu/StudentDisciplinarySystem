@@ -71,7 +71,7 @@ router.put('/:id/status', verifyToken, requireAdmin, async (req, res) => {
     const { status } = req.body;
     const validStatuses = ['approved', 'suspended', 'rejected'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status. Must be approved or suspended' });
+      return res.status(400).json({ error: 'Invalid status. Must be approved, suspended, or rejected' });
     }
 
     const result = await runQuery('UPDATE users SET status = ? WHERE user_id = ?', [status, req.params.id]);

@@ -353,16 +353,12 @@ export function AdminDashboard() {
   const handleRejectUser = async (userId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'rejected' })
+      const response = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
-        toast.success('User rejected');
+        toast.success('User rejected and removed');
         fetchUsers();
       } else {
         toast.error('Failed to reject user');

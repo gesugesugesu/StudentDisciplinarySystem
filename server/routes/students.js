@@ -19,17 +19,19 @@ function formatClassLevel(yearLevel, educationLevel) {
 router.get('/', verifyToken, async (req, res) => {
   try {
     const students = await getAllRows(`
-      SELECT student_id as id,
-             CONCAT(first_name, ' ', last_name) as name,
-             course,
-             year_level as yearLevel,
-             education_level as educationLevel,
-             email,
-             status,
-             created_at
-      FROM students
-      WHERE status = 'Active'
-      ORDER BY last_name, first_name
+      SELECT s.student_id as id,
+             CONCAT(s.first_name, ' ', s.last_name) as name,
+             s.course,
+             s.year_level as yearLevel,
+             s.education_level as educationLevel,
+             s.email,
+             s.status,
+             s.created_at
+      FROM students s
+      INNER JOIN users u ON s.email = u.email
+      WHERE s.status = 'Active'
+        AND u.status = 'approved'
+      ORDER BY s.last_name, s.first_name
     `);
 
     // Transform to match frontend expectations
@@ -68,21 +70,24 @@ router.get('/', verifyToken, async (req, res) => {
 router.get('/:id', verifyToken, async (req, res) => {
   try {
     const student = await getRow(`
-      SELECT student_id as id,
-             first_name,
-             last_name,
-             course,
-             year_level as yearLevel,
-             education_level as educationLevel,
-             email,
-             contact_number,
-             parent_name,
-             parent_email,
-             parent_phone,
-             status,
-             created_at
-      FROM students
-      WHERE student_id = ?
+      SELECT s.student_id as id,
+             s.first_name,
+             s.last_name,
+             s.course,
+             s.year_level as yearLevel,
+             s.education_level as educationLevel,
+             s.email,
+             s.contact_number,
+             s.parent_name,
+             s.parent_email,
+             s.parent_phone,
+             s.status,
+             s.created_at
+      FROM students s
+      INNER JOIN users u ON s.email = u.email
+      WHERE s.student_id = ?
+        AND s.status = 'Active'
+        AND u.status = 'approved'
     `, [req.params.id]);
 
     if (!student) {
@@ -121,45 +126,51 @@ router.get('/email/:email', async (req, res) => {
   try {
     const emailParam = req.params.email;
     console.log('Looking for student with email:', emailParam);
-    
+
     // First try exact match
     let student = await getRow(`
-      SELECT student_id as id,
-             first_name,
-             last_name,
-             course,
-             year_level as yearLevel,
-             education_level as educationLevel,
-             email,
-             contact_number,
-             parent_name,
-             parent_email,
-             parent_phone,
-             status,
-             created_at
-      FROM students
-      WHERE LOWER(email) = LOWER(?)
+      SELECT s.student_id as id,
+             s.first_name,
+             s.last_name,
+             s.course,
+             s.year_level as yearLevel,
+             s.education_level as educationLevel,
+             s.email,
+             s.contact_number,
+             s.parent_name,
+             s.parent_email,
+             s.parent_phone,
+             s.status,
+             s.created_at
+      FROM students s
+      INNER JOIN users u ON s.email = u.email
+      WHERE LOWER(s.email) = LOWER(?)
+        AND s.status = 'Active'
+        AND u.status = 'approved'
     `, [emailParam]);
 
     // If not found, try to find any student with similar email
     if (!student) {
       console.log('Exact match not found, trying partial match');
       student = await getRow(`
-        SELECT student_id as id,
-               first_name,
-               last_name,
-               course,
-               year_level as yearLevel,
-               education_level as educationLevel,
-               email,
-               contact_number,
-               parent_name,
-               parent_email,
-               parent_phone,
-               status,
-               created_at
-        FROM students
-        WHERE email LIKE ?
+        SELECT s.student_id as id,
+               s.first_name,
+               s.last_name,
+               s.course,
+               s.year_level as yearLevel,
+               s.education_level as educationLevel,
+               s.email,
+               s.contact_number,
+               s.parent_name,
+               s.parent_email,
+               s.parent_phone,
+               s.status,
+               s.created_at
+        FROM students s
+        INNER JOIN users u ON s.email = u.email
+        WHERE s.email LIKE ?
+          AND s.status = 'Active'
+          AND u.status = 'approved'
       `, [`%${emailParam}%`]);
     }
 
