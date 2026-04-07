@@ -10,11 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { User, UserRole, UserStatus, Incident, GroupedStudentRecord } from "../types";
+import { User, UserRole, UserStatus, Incident, GroupedStudentRecord, Student } from "../types";
 import { toast } from "sonner";
 import { AddUsersDialog } from "./AddUsersDialog";
 import { ViolationManagement } from "./ViolationManagement";
 import { EditIncidentDialog } from "./EditIncidentDialog";
+import { StudentList } from "./StudentList";
+import { StudentProfile } from "./StudentProfile";
+import { AllIncidents } from "./AllIncidents";
+import { AddIncidentForm } from "./AddIncidentForm";
 import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown, Repeat } from "lucide-react";
 import API_BASE from '../config/api';
 
@@ -61,17 +65,63 @@ export function AdminDashboard() {
   const [studentOffenseCounts, setStudentOffenseCounts] = useState<Record<string, number>>({});
   const [loadingOffenseCounts, setLoadingOffenseCounts] = useState(false);
   const [studentRecordsOffenseCounts, setStudentRecordsOffenseCounts] = useState<Record<string, number>>({});
+  const [fullAccess, setFullAccess] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
 
   useEffect(() => {
     fetchUsers();
     fetchIncidents();
     fetchStudentRecords();
+    fetchStudents();
   }, []);
 
   const refreshData = () => {
     fetchUsers();
     fetchIncidents();
     fetchStudentRecords();
+    fetchStudents();
+  };
+
+  const handleAddIncident = async (incident: Omit<Incident, 'id'>) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(incident)
+      });
+      if (response.ok) {
+        toast.success('Incident added successfully');
+        fetchIncidents();
+      } else {
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.error || 'Failed to add incident');
+      }
+    } catch (error) {
+      toast.error('Error adding incident');
+    }
+  };
+
+  const handleDeleteIncident = async (incidentId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/incidents/${incidentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        toast.success('Incident deleted successfully');
+        fetchIncidents();
+      } else {
+        toast.error('Failed to delete incident');
+      }
+    } catch (error) {
+      toast.error('Error deleting incident');
+    }
   };
 
   const fetchStudentRecords = async () => {
@@ -322,9 +372,25 @@ export function AdminDashboard() {
         })));
       }
     } catch (error) {
+      console.error('Fetch users error:', error);
       toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/students`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStudents(data);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch students');
     }
   };
 
@@ -629,24 +695,64 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+          <h2 className="text-xl font-semibold">Admin Dashboard</h2>
           <p className="text-muted-foreground text-sm">Manage users and view statistics</p>
         </div>
-        <Button onClick={refreshData} variant="outline" size="icon" className="h-10 w-10" style={{ backgroundColor: '#15803d', color: 'white' }}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={refreshData} variant="outline" size="icon" className="h-8 w-8" style={{ backgroundColor: '#15803d', color: 'white' }}>
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+          <div className="flex items-center gap-2 p-1 bg-muted rounded-md border">
+            <label htmlFor="full-access" className="text-xs font-medium text-green-700 dark:text-green-400">Full Access</label>
+            <button
+              type="button"
+              id="full-access"
+              onClick={() => setFullAccess(!fullAccess)}
+              style={{
+                backgroundColor: fullAccess ? '#15803d' : '#e5e7eb',
+                border: '1px solid #d1d5db',
+                padding: '0',
+                display: 'inline-block',
+                height: '24px',
+                width: '44px',
+                borderRadius: '12px',
+                position: 'relative',
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'background-color 0.2s'
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  height: '16px',
+                  width: '16px',
+                  borderRadius: '50%',
+                  backgroundColor: 'white',
+                  position: 'absolute',
+                  top: '2px',
+                  left: fullAccess ? '22px' : '2px',
+                  transition: 'left 0.2s'
+                }}
+              />
+            </button>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="users" className="space-y-4 w-full">
         <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsList className="inline-flex min-w-full w-auto">
+          <TabsList key={fullAccess ? 'full' : 'basic'} className="inline-flex min-w-full w-auto">
             <TabsTrigger value="users" className="flex-shrink-0">All Users</TabsTrigger>
             <TabsTrigger value="incidents" className="flex-shrink-0">Incident Reports</TabsTrigger>
             <TabsTrigger value="records" className="flex-shrink-0">Student Records</TabsTrigger>
             <TabsTrigger value="violations" className="flex-shrink-0">Violation Management</TabsTrigger>
             <TabsTrigger value="stats" className="flex-shrink-0">User Statistics</TabsTrigger>
+            {fullAccess && <TabsTrigger value="students" className="flex-shrink-0">Students</TabsTrigger>}
+            {fullAccess && <TabsTrigger value="all-incidents" className="flex-shrink-0">All Incidents</TabsTrigger>}
+            {fullAccess && <TabsTrigger value="add-incident" className="flex-shrink-0">Add Incident</TabsTrigger>}
           </TabsList>
         </div>
 
@@ -1504,6 +1610,58 @@ export function AdminDashboard() {
               </ResponsiveContainer>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="students" className="space-y-4">
+          {fullAccess ? (
+            selectedStudent && students.find(s => s.id === selectedStudent) ? (
+              <StudentProfile
+                student={students.find(s => s.id === selectedStudent)!}
+                incidents={incidents}
+                onBack={() => setSelectedStudent(null)}
+                onAddIncident={() => {}}
+                onDeleteIncident={handleDeleteIncident}
+              />
+            ) : (
+              <StudentList
+                students={students}
+                incidents={incidents}
+                onSelectStudent={setSelectedStudent}
+              />
+            )
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              Enable Full Access to view student management features
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="all-incidents" className="space-y-4">
+          {fullAccess ? (
+            <AllIncidents
+              incidents={incidents}
+              students={students}
+              onSelectStudent={setSelectedStudent}
+              onDeleteIncident={handleDeleteIncident}
+            />
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              Enable Full Access to view all incidents
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="add-incident" className="space-y-4">
+          {fullAccess ? (
+            <AddIncidentForm
+              onAddIncident={handleAddIncident}
+              students={students}
+            />
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              Enable Full Access to add new incidents
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
