@@ -164,23 +164,7 @@ async function createTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     `);
     console.log('Courses table ready');
-    
-    // Communication logs table
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS communication_logs (
-        log_id INT PRIMARY KEY AUTO_INCREMENT,
-        student_id INT NOT NULL,
-        case_id INT,
-        recipient_name VARCHAR(100),
-        recipient_email VARCHAR(100),
-        message TEXT,
-        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (student_id) REFERENCES students(student_id),
-        FOREIGN KEY (case_id) REFERENCES disciplinary_cases(case_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-    `);
-    console.log('Communication logs table ready');
-    
+
     console.log('All tables created successfully');
   } catch (error) {
     console.error('Error creating tables:', error.message);
