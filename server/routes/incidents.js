@@ -276,6 +276,14 @@ router.put('/:id', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Case not found' });
     }
 
+    if (!currentCase.student_id) {
+      return res.status(400).json({ error: 'Case has no student assigned' });
+    }
+
+    if (!currentCase.violation_id) {
+      return res.status(400).json({ error: 'Case has no violation assigned' });
+    }
+
     // Find or create violation - use current violation if type is not provided
     let violation;
     if (type) {
@@ -314,11 +322,14 @@ router.put('/:id', verifyToken, async (req, res) => {
     // Ensure all values are properly handled (convert undefined to null)
     const finalReportedBy = reportedByIdNum !== undefined ? reportedByIdNum : null;
     
-    // Use the existing values from the current case if no new values are provided
-    const studentIdNum = studentId ? parseInt(studentId) : (currentCase.student_id || null);
-    const finalStudentId = studentIdNum !== undefined ? studentIdNum : null;
-    const dateValue = date || currentCase.date_reported || null;
-    const finalStatus = status || currentCase.case_status || 'Pending';
+// Use the existing values from the current case if no new values are provided
+const studentIdNum = studentId ? parseInt(studentId) : (currentCase.student_id || null);
+const finalStudentId = studentIdNum !== undefined ? studentIdNum : null;
+const dateValue = date || currentCase.date_reported;
+if (!dateValue) {
+  dateValue = new Date().toISOString().split('T')[0];
+}
+const finalStatus = status || currentCase.case_status || 'Pending';
     
     // Use actionTaken or sanction, or keep existing action_taken
     const actionTakenValue = actionTaken || sanction || currentCase.action_taken || '';
@@ -404,7 +415,7 @@ router.put('/:id', verifyToken, async (req, res) => {
       type: updatedRecord.type,
       severity: updatedRecord.severity,
       description: updatedRecord.description,
-      actionTaken: '',
+      actionTaken: updatedRecord.action_taken || '',
       status: updatedRecord.status || 'Pending',
       reportedBy: updatedRecord.reportedByName || 'Unknown',
       date: updatedRecord.date,
