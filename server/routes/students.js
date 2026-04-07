@@ -148,8 +148,6 @@ router.get('/email/:email', async (req, res) => {
                s.email,
                s.contact_number,
                s.parent_name,
-               s.parent_email,
-               s.parent_phone,
                s.status,
                s.created_at
         FROM students s
