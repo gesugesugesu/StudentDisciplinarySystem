@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { runQuery, getRow, getAllRows } = require('../database/db');
 const { verifyToken } = require('./auth');
 
@@ -470,61 +472,12 @@ router.post('/suggest-sanction', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: offenseCategory and offenseCount' });
     }
     
-    // Predefined handbook rules for sanctions
-    const handbookRules = {
-      "Category 1": {
-        firstOffense: "Written Warning",
-        secondOffense: "1-Day Suspension",
-        thirdOffense: "3-Day Suspension",
-        fourthOffense: "5-Day Suspension with Parent Conference",
-        default: "Written Warning"
-      },
-      "Category 2": {
-        firstOffense: "1-Day Suspension",
-        secondOffense: "3-Day Suspension",
-        thirdOffense: "5-Day Suspension",
-        fourthOffense: "Long-term Suspension (7+ days)",
-        default: "1-Day Suspension"
-      },
-      "Category 3": {
-        firstOffense: "3-Day Suspension",
-        secondOffense: "5-Day Suspension",
-        thirdOffense: "Long-term Suspension (10+ days)",
-        fourthOffense: "Expulsion Recommendation",
-        default: "3-Day Suspension"
-      }
-    };
-    
-    // Map category from full name to key
-    const categoryMap = {
-      "Category 1 Offense": "Category 1",
-      "Category 2 Offense": "Category 2",
-      "Category 3 Offense": "Category 3"
-    };
-    
-    const categoryKey = categoryMap[offenseCategory] || offenseCategory;
-    const rules = handbookRules[categoryKey] || handbookRules["Category 1"];
-    
-    // Determine sanction based on offense count
-    let suggestedSanction;
-    let explanation;
-    
-    if (offenseCount === 0 || offenseCount === 1) {
-      suggestedSanction = rules.firstOffense;
-      explanation = `First offense for ${categoryKey} violation. Standard protocol requires a ${suggestedSanction}.`;
-    } else if (offenseCount === 2) {
-      suggestedSanction = rules.secondOffense;
-      explanation = `Second offense of this type. Based on the student handbook, repeat offenders receive a ${suggestedSanction}.`;
-    } else if (offenseCount === 3) {
-      suggestedSanction = rules.thirdOffense;
-      explanation = `Third offense indicates persistent behavior. The handbook mandates ${suggestedSanction}.`;
-    } else {
-      suggestedSanction = rules.fourthOffense;
-      explanation = `Multiple repeat offenses (${offenseCount} incidents). This escalated response is required per handbook guidelines.`;
-    }
-    
-    // Check for additional factors in student history
+    // Initialize with basic fallback values (only used if Gemini completely fails)
+    let suggestedSanction = "Written Warning";
+    let explanation = "Basic disciplinary measure applied.";
     let additionalNotes = [];
+
+    // Check for additional factors in student history
     if (studentHistory && studentHistory.length > 0) {
       const totalPreviousIncidents = studentHistory.length;
       if (totalPreviousIncidents >= 5) {
@@ -533,7 +486,7 @@ router.post('/suggest-sanction', verifyToken, async (req, res) => {
       if (totalPreviousIncidents >= 3) {
         additionalNotes.push("⚠️ Multiple different violations on record. Parent conference strongly recommended.");
       }
-      
+
       // Check for recent incidents (within last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -543,47 +496,121 @@ router.post('/suggest-sanction', verifyToken, async (req, res) => {
       }
     }
     
-    // Use Gemini for AI enhancement if API key is available
+    // Use Gemini AI as PRIMARY sanction recommendation engine with PDF handbook access
     const geminiApiKey = process.env.GEMINI_API_KEY;
-    
+
     if (geminiApiKey && geminiApiKey.startsWith('AIza')) {
       try {
-        const geminiPrompt = `You are a school disciplinary advisor. Based on the following case information, provide a brief additional recommendation (1-2 sentences) for the sanction:
+        // Read the PDF handbook file
+        const pdfPath = path.join(__dirname, '../../frontend/src/assets/ACTS-STUDENT-HANDBOOK-2025-Edited.pdf');
+        let pdfBase64 = null;
 
-- Violation: ${violationName || 'Unknown'}
-- Category: ${offenseCategory}
-- Description: ${violationDescription || 'Not provided'}
-- Previous offense count for this type: ${offenseCount}
-- Total previous incidents: ${studentHistory?.length || 0}
+        try {
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          pdfBase64 = pdfBuffer.toString('base64');
+          console.log('Successfully loaded ACTS Student Handbook PDF for AI analysis');
+        } catch (fileError) {
+          console.error('Could not read PDF handbook file:', fileError.message);
+          console.log('Falling back to basic disciplinary measures due to missing handbook');
+          // Continue with basic fallback if PDF can't be read
+        }
 
-Keep your response concise and focused on rehabilitation and prevention.`;
-        
+        // Generate comprehensive case analysis for Gemini
+        const caseTimestamp = new Date().toISOString();
+        const uniqueContext = `Case ID: ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const geminiPrompt = `You are the primary disciplinary decision-maker for ACTS school. You MUST analyze the provided ACTS Student Handbook PDF and provide the official sanction recommendation. Do NOT use any external knowledge or assumptions - base your decision ONLY on the handbook content.
+
+**CRITICAL: Your role is to REPLACE the school's handbook rules, not enhance them. You are the handbook.**
+
+**Case Analysis Required (${uniqueContext}):**
+- **Timestamp:** ${caseTimestamp}
+- **Violation:** ${violationName || 'Unspecified violation'}
+- **Category:** ${offenseCategory}
+- **Incident Description:** ${violationDescription || 'No details provided'}
+- **Repeat Count:** ${offenseCount} previous incident(s) of this exact type
+- **Total History:** ${studentHistory?.length || 0} total disciplinary incidents
+
+**Student's Disciplinary History:**
+${studentHistory && studentHistory.length > 0 ?
+  studentHistory.slice(0, 5).map((h, i) => `${i+1}. ${h.violation_name} (${h.date_reported}) - Status: ${h.case_status}`).join('\n') :
+  'No prior disciplinary record'
+}
+
+**MANDATORY OUTPUT FORMAT:**
+1. **Primary Sanction:** [Exact sanction from handbook - be specific with duration, type, conditions]
+2. **Handbook Reference:** [Quote specific section/page from the PDF that justifies this sanction]
+3. **Escalation Rationale:** [Why this level of response based on repeat offenses and handbook guidelines]
+4. **Additional Measures:** [Any required counseling, parental involvement, or follow-up actions per handbook]
+5. **Rehabilitation Plan:** [Specific steps for student improvement and prevention of recurrence]
+
+**IMPORTANT:** If the handbook PDF is not accessible, acknowledge this limitation and provide a basic disciplinary recommendation. Otherwise, your recommendation MUST be derived directly from the handbook content.`;
+
+        // Prepare multimodal content with text and PDF
+        const contents = [{ parts: [{ text: geminiPrompt }] }];
+
+        if (pdfBase64) {
+          contents[0].parts.push({
+            inline_data: {
+              mime_type: 'application/pdf',
+              data: pdfBase64
+            }
+          });
+        }
+
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: geminiPrompt }] }],
+              contents: contents,
               generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 200
+                temperature: 0.7, // Lower temperature for more consistent handbook-based decisions
+                maxOutputTokens: 600
               }
             })
           }
         );
-        
+
         if (geminiResponse.ok) {
           const geminiData = await geminiResponse.json();
           const aiRecommendation = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
           if (aiRecommendation) {
-            additionalNotes.push(`🤖 AI Insight: ${aiRecommendation}`);
+            console.log('Gemini AI provided handbook-based sanction recommendation');
+
+            // Parse Gemini response to extract sanction and explanation
+            // Look for "Primary Sanction:" in the response
+            const sanctionMatch = aiRecommendation.match(/Primary Sanction:\s*([^\n]+)/i);
+            if (sanctionMatch) {
+              suggestedSanction = sanctionMatch[1].trim();
+            }
+
+            // Use the full AI analysis as the explanation
+            explanation = aiRecommendation;
+
+            // Add any additional notes from history checking to the AI response
+            if (additionalNotes.length > 0) {
+              explanation += '\n\nAdditional Considerations:\n' + additionalNotes.join('\n');
+            }
+
+            // Clear additionalNotes since they're now included in explanation
+            additionalNotes = [];
+          } else {
+            console.warn('Gemini API returned empty response, using fallback');
           }
+        } else {
+          const errorText = await geminiResponse.text();
+          console.error('Gemini API error:', geminiResponse.status, errorText);
         }
       } catch (aiError) {
-        console.error('Gemini API error:', aiError);
-        // Continue with rule-based suggestion even if AI fails
+        console.error('Gemini AI processing error:', aiError);
+        console.log('Falling back to basic disciplinary measures due to AI failure');
+        // Continue with basic fallback values already set
       }
+    } else {
+      console.log('Gemini API key not configured, using basic disciplinary measures');
     }
     
     res.json({
