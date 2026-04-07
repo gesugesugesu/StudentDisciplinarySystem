@@ -56,7 +56,6 @@ export interface CommunicationLog {
   method: "Email" | "Phone" | "In-Person" | "Letter";
   contactedBy: string;
   notes: string;
-  parentNotified: boolean;
 }
 
 export type UserRole = "Super Admin" | "Discipline Officer" | "Student";

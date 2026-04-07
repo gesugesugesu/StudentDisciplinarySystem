@@ -60,7 +60,6 @@ export default function App() {
     return null;
   });
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
-  const [isStudentEmailDialogOpen, setIsStudentEmailDialogOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
   const [currentStudent, setCurrentStudent] = useState<FetchedStudent | null>(null);
 
@@ -192,18 +191,7 @@ export default function App() {
     toast.success("Logged out successfully");
   };
   
-  const handleStudentEmailSubmit = (email: string) => {
-    const student = dbStudents.find((s: Student) => s.email.toLowerCase() === email.toLowerCase());
-    if (student) {
-      setCurrentStudent(student);
-      setCurrentStudentId(student.id);
-      setIsStudentViewOpen(true);
-      setIsStudentEmailDialogOpen(false);
-      toast.success(`Welcome, ${student.name}`);
-    } else {
-      toast.error("Student email not found");
-    }
-  };
+
   
   const handleStudentLogout = () => {
     setIsStudentViewOpen(false);
