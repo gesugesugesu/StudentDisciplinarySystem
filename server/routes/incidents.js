@@ -325,7 +325,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 // Use the existing values from the current case if no new values are provided
 const studentIdNum = studentId ? parseInt(studentId) : (currentCase.student_id || null);
 const finalStudentId = studentIdNum !== undefined ? studentIdNum : null;
-const dateValue = date || currentCase.date_reported;
+let dateValue = date || currentCase.date_reported;
 if (!dateValue) {
   dateValue = new Date().toISOString().split('T')[0];
 }
