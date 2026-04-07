@@ -38,18 +38,14 @@ interface AllIncidentsProps {
   incidents: Incident[];
   students: Student[];
   onSelectStudent: (studentId: string) => void;
-  onEditIncident: (incident: Incident) => void;
   onDeleteIncident: (incidentId: string) => void;
-  onNotifyParent: (incident: Incident) => void;
 }
 
-export function AllIncidents({ 
-  incidents, 
-  students, 
+export function AllIncidents({
+  incidents,
+  students,
   onSelectStudent,
-  onEditIncident,
   onDeleteIncident,
-  onNotifyParent,
 }: AllIncidentsProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [severityFilter, setSeverityFilter] = useState<Severity | "All">("All");

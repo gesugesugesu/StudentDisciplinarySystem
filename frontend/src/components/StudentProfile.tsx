@@ -30,9 +30,7 @@ interface StudentProfileProps {
   incidents: Incident[];
   onBack: () => void;
   onAddIncident: () => void;
-  onEditIncident: (incident: Incident) => void;
   onDeleteIncident: (incidentId: string) => void;
-  onNotifyParent: (incident: Incident) => void;
 }
 
 interface FetchedStudent extends Student {

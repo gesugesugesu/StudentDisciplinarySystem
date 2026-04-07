@@ -126,6 +126,7 @@ export default function App() {
             setCurrentStudent(studentData);
             setCurrentStudentId(studentData.id);
             setIsStudentViewOpen(true);
+            fetchIncidents(); // Fetch incidents for student view
             toast.success(`Welcome, ${studentData.name}`);
           } else {
             const errorData = await response.json();
@@ -148,6 +149,7 @@ export default function App() {
             setCurrentStudent(student);
             setCurrentStudentId(student.id);
             setIsStudentViewOpen(true);
+            fetchIncidents();
           }
         } catch (error) {
           console.error('Error fetching student data:', error);
@@ -167,6 +169,7 @@ export default function App() {
           setCurrentStudent(student);
           setCurrentStudentId(student.id);
           setIsStudentViewOpen(true);
+          fetchIncidents();
         }
       };
       
@@ -190,9 +193,7 @@ export default function App() {
     setActiveTab("dashboard");
     toast.success("Logged out successfully");
   };
-  
 
-  
   const handleStudentLogout = () => {
     setIsStudentViewOpen(false);
     setCurrentStudentId(null);
@@ -276,8 +277,8 @@ export default function App() {
     setSelectedStudentId(null);
   };
   
-  const selectedStudent = selectedStudentId 
-    ? dbStudents.find((s: Student) => s.id === selectedStudentId)
+  const selectedStudent: Student | null = selectedStudentId
+    ? dbStudents.find((s: Student) => s.id === selectedStudentId) || null
     : null;
   
   // Show student view if student is viewing their records
@@ -364,9 +365,7 @@ export default function App() {
                 incidents={incidents}
                 onBack={handleBackToList}
                 onAddIncident={() => setIsAddDialogOpen(true)}
-                onEditIncident={handleEditIncident}
                 onDeleteIncident={handleDeleteIncident}
-
               />
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -394,7 +393,6 @@ export default function App() {
                     incidents={incidents}
                     students={dbStudents}
                     onSelectStudent={handleSelectStudent}
-                    onEditIncident={handleEditIncident}
                     onDeleteIncident={handleDeleteIncident}
                   />
                 </TabsContent>
