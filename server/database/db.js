@@ -311,21 +311,6 @@ async function ensureDefaultData() {
       console.log('Updated existing admin to Super Admin role and approved status');
     }
 
-    // Check if default violation exists
-    const [violationRows] = await pool.execute(
-      'SELECT violation_id FROM violations WHERE violation_name = ?',
-      ['Late Attendance']
-    );
-
-    if (violationRows.length === 0) {
-      await pool.execute(
-        'INSERT INTO violations (violation_name, category, description) VALUES (?, ?, ?)',
-        ['Late Attendance', 'Attendance', 'Student arrived late to class']
-      );
-
-      console.log('Default violation added');
-    }
-
     // Create courses table if it doesn't exist
     try {
       await pool.execute(`
