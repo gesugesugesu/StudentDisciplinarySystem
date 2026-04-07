@@ -43,10 +43,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Authentication state
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
-    const token = localStorage.getItem('token');
-    return !!token;
-  });
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -93,13 +90,7 @@ export default function App() {
     }
   };
 
-  // Fetch incidents on mount if admin is already logged in
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token && isAdminLoggedIn) {
-      fetchIncidents();
-    }
-  }, [isAdminLoggedIn]);
+  // No auto-login - always start at login form
 
   const handleAdminLogin = (user: any) => {
     if (user.role === 'Student') {
