@@ -140,6 +140,40 @@ async function createTables() {
     `);
     console.log('Sanctions table ready');
     
+    // Sanction types table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS sanction_types (
+        sanction_type_id INT PRIMARY KEY AUTO_INCREMENT,
+        sanction_name VARCHAR(100) NOT NULL,
+        category VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    `);
+    console.log('Sanction types table ready');
+    
+    // Insert default sanction types if table is empty
+    const existingTypes = await getAllRows('SELECT COUNT(*) as count FROM sanction_types');
+    if (existingTypes[0].count === 0) {
+      await pool.execute(`
+        INSERT INTO sanction_types (sanction_name, category) VALUES
+        ('Verbal Warning', 'Category 1'),
+        ('Written Warning', 'Category 1'),
+        ('Parent Conference', 'Category 1'),
+        ('Detention', 'Category 1'),
+        ('Counseling', 'Category 1'),
+        ('Behavior Contract', 'Category 2'),
+        ('Probation', 'Category 2'),
+        ('Restitution', 'Category 2'),
+        ('Community Service', 'Category 2'),
+        ('Suspension (1-3 days)', 'Category 2'),
+        ('Suspension (3-5 days)', 'Category 3'),
+        ('Suspension (5-10 days)', 'Category 3'),
+        ('Expulsion Proceedings', 'Category 3'),
+        ('Mandatory Counseling', 'Category 3')
+      `);
+      console.log('Default sanction types inserted');
+    }
+    
     // Courses table
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS courses (

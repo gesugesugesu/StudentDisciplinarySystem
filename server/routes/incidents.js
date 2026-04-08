@@ -460,20 +460,27 @@ router.get('/violations/list', verifyToken, async (req, res) => {
 
 // AI-powered sanction suggestion using Gemini
 router.post('/suggest-sanction', async (req, res) => {
-  try {
-    // TEMPORARY: Skip authentication for testing
-    console.log('AI Suggestion requested:', { offenseCategory: req.body.offenseCategory, offenseCount: req.body.offenseCount, violationName: req.body.violationName });
+  let suggestedSanction = "Written Warning";
+  let explanation = "Basic disciplinary measure applied.";
+  let additionalNotes = [];
+  let aiUsedSuccessfully = false;
+  let offenseCategory = req.body.offenseCategory;
+  let offenseCount = req.body.offenseCount;
+  let studentHistory = req.body.studentHistory;
+  let violationName = req.body.violationName;
+  let violationDescription = req.body.violationDescription;
 
-    const { offenseCategory, offenseCount, studentHistory, violationName, violationDescription } = req.body;
+  try {
+    console.log('AI Suggestion requested:', { offenseCategory, offenseCount, violationName });
 
     if (!offenseCategory || offenseCount === undefined) {
       return res.status(400).json({ error: 'Missing required fields: offenseCategory and offenseCount' });
     }
     
     // Initialize with category-based fallback values (used if Gemini completely fails)
-    let suggestedSanction = "Written Warning";
-    let explanation = "Basic disciplinary measure applied.";
-    let additionalNotes = [];
+    suggestedSanction = "Written Warning";
+    explanation = "Basic disciplinary measure applied.";
+    additionalNotes = [];
 
     // Provide varied fallback sanctions based on category and offense count
     if (offenseCategory === "Category 1 Offense") {
@@ -527,7 +534,6 @@ router.post('/suggest-sanction', async (req, res) => {
       try {
         // Read the PDF handbook file
         const pdfPath = path.join(process.cwd(), '..', 'frontend', 'src', 'assets', 'ACTS-STUDENT-HANDBOOK-2025-Edited.pdf');
-        let pdfBase64 = null;
 
         try {
           if (fs.existsSync(pdfPath)) {
@@ -537,7 +543,9 @@ router.post('/suggest-sanction', async (req, res) => {
           } else {
             console.warn('PDF handbook file not found at:', pdfPath);
             console.log('Current working directory:', process.cwd());
-            try {
+  let aiUsedSuccessfully = false;
+
+  try {
               const assetsDir = path.join(process.cwd(), '..', 'frontend', 'src', 'assets');
               if (fs.existsSync(assetsDir)) {
                 console.log('Available files in frontend/assets:', fs.readdirSync(assetsDir).join(', '));
@@ -639,6 +647,7 @@ ${studentHistory && studentHistory.length > 0 ?
 
           if (aiRecommendation) {
             console.log('Gemini AI provided handbook-based sanction recommendation');
+            aiUsedSuccessfully = true;
 
             // Parse Gemini response to extract sanction and explanation
             // Look for "Recommended Sanction:" in the response
@@ -694,12 +703,20 @@ ${studentHistory && studentHistory.length > 0 ?
       category: offenseCategory,
       offenseCount,
       additionalNotes: additionalNotes.length > 0 ? additionalNotes : null,
-      basedOn: pdfBase64 ? "ACTS Student Handbook 2025-2026 (AI analyzed)" : "ACTS Student Handbook 2025-2026 (fallback recommendations)",
-      aiUsed: !!pdfBase64
+      basedOn: aiUsedSuccessfully ? "ACTS Student Handbook 2025-2026 (AI analyzed)" : "ACTS Student Handbook 2025-2026 (fallback recommendations)",
+      aiUsed: aiUsedSuccessfully
     });
   } catch (error) {
     console.error('Error generating sanction suggestion:', error);
-    res.status(500).json({ error: 'Failed to generate sanction suggestion' });
+    res.status(200).json({
+      suggestedSanction,
+      explanation,
+      category: offenseCategory,
+      offenseCount,
+      additionalNotes: additionalNotes.length > 0 ? additionalNotes : null,
+      basedOn: aiUsedSuccessfully ? "ACTS Student Handbook 2025-2026 (AI analyzed)" : "ACTS Student Handbook 2025-2026 (fallback recommendations)",
+      aiUsed: !!pdfBase64
+    });
   }
 });
 
