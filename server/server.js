@@ -9,18 +9,35 @@ const PORT = process.env.PORT || 5000;
 const { initializeDatabase } = require('./database/db');
 
 // Middleware
-const allowedOrigins = (process.env.ALLOWED_ORIGIN || '*').split(',').map(o => o.trim().replace(/\/$/, ''));
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || 'http://localhost:3000,http://localhost:5173').split(',').map(o => o.trim().replace(/\/$/, ''));
+
+// In development, allow localhost origins. In production, only allow specified origins
+const isProduction = process.env.NODE_ENV === 'production';
 const corsOptions = {
   origin: (origin, callback) => {
     const requestOrigin = (origin || '').replace(/\/$/, '');
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(requestOrigin)) {
+
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // In development, allow localhost origins for convenience
+    if (!isProduction && (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1'))) {
+      return callback(null, true);
+    }
+
+    // Check against allowed origins
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(requestOrigin)) {
       callback(null, true);
     } else {
-      console.log(`CORS blocked: ${requestOrigin} not in ${allowedOrigins}`);
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`CORS blocked: ${requestOrigin} not in allowed origins: ${allowedOrigins.join(', ')}`);
+      callback(new Error(`CORS policy violation: Origin ${requestOrigin} not allowed`));
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
 app.use(cors(corsOptions));
@@ -65,7 +82,5 @@ app.listen(PORT, '0.0.0.0', () => {
 initializeDatabase().catch(err => {
   console.error('Database initialization failed:', err.message);
 });
-
-module.exports = app;
 
 module.exports = app;

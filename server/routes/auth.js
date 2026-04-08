@@ -92,7 +92,7 @@ router.post('/register', async (req, res) => {
 
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Registration failed due to server error. Please try again.' });
   }
 });
 
@@ -131,16 +131,31 @@ router.post('/login', async (req, res) => {
     if (user.role === 'Student') {
       const existingStudent = await getRow('SELECT student_id FROM students WHERE email = ?', [user.email]);
       if (!existingStudent) {
-        // Create student record from user data
+        // Create student record from user data - use INSERT IGNORE to prevent race conditions
         const nameParts = (user.full_name || '').split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
-        
-        await runQuery(
-          'INSERT INTO students (first_name, last_name, email, status) VALUES (?, ?, ?, ?)',
-          [firstName, lastName, user.email, 'Active']
-        );
-        console.log('Created student record for user:', user.email);
+
+        try {
+          const result = await runQuery(
+            'INSERT IGNORE INTO students (first_name, last_name, email, status) VALUES (?, ?, ?, ?)',
+            [firstName, lastName, user.email, 'Active']
+          );
+
+          if (result.affectedRows > 0) {
+            console.log('Created student record for user:', user.email);
+          } else {
+            console.log('Student record already exists for user:', user.email);
+          }
+        } catch (error) {
+          // Check if it's a duplicate entry error (which is expected in race conditions)
+          if (error.code === 'ER_DUP_ENTRY') {
+            console.log('Student record creation skipped due to concurrent creation for user:', user.email);
+          } else {
+            console.error('Error creating student record:', error);
+            // Don't fail the login, just log the error
+          }
+        }
       }
     }
 
@@ -164,7 +179,7 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Login failed due to server error. Please try again.' });
   }
 });
 
@@ -181,6 +196,9 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
     res.status(401).json({ error: 'Invalid token' });
   }
 };
@@ -201,7 +219,44 @@ router.get('/users', verifyToken, async (req, res) => {
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch users. Please try again.' });
+  }
+});
+
+// Refresh token route
+router.post('/refresh', verifyToken, async (req, res) => {
+  try {
+    // Verify user still exists and is approved
+    const user = await getRow('SELECT user_id, email, full_name, role, status FROM users WHERE user_id = ?', [req.user.id]);
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    if (user.status !== 'approved') {
+      return res.status(401).json({ error: 'Account not approved' });
+    }
+
+    // Generate new token
+    const newToken = jwt.sign(
+      { id: user.user_id, email: user.email },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      message: 'Token refreshed successfully',
+      token: newToken,
+      user: {
+        id: user.user_id,
+        email: user.email,
+        fullName: user.full_name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({ error: 'Failed to refresh token' });
   }
 });
 

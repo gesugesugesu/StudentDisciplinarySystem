@@ -164,14 +164,22 @@ async function ensureDefaultData() {
       await pool.execute('ALTER TABLE users ADD COLUMN full_name VARCHAR(100)');
       console.log('Added full_name column to users table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('full_name column already exists in users table');
+      } else {
+        console.warn('Failed to add full_name column to users table:', error.message);
+      }
     }
 
     try {
       await pool.execute('ALTER TABLE users ADD COLUMN department VARCHAR(100)');
       console.log('Added department column to users table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('department column already exists in users table');
+      } else {
+        console.warn('Failed to add department column to users table:', error.message);
+      }
     }
 
     // Update role enum to include only Super Admin, Discipline Officer, Student
@@ -179,7 +187,11 @@ async function ensureDefaultData() {
       await pool.execute("ALTER TABLE users MODIFY COLUMN role ENUM('Super Admin','Discipline Officer','Student')");
       console.log('Updated role enum to include Super Admin, Discipline Officer, Student');
     } catch (error) {
-      // Enum might already be updated, ignore error
+      if (error.code === 'ER_CANT_CHANGE_COLUMN_TYPE' || error.code === 'ER_INVALID_USE_OF_NULL') {
+        console.log('Role enum already updated or compatible');
+      } else {
+        console.warn('Failed to update role enum in users table:', error.message);
+      }
     }
 
     // Add status column to users table for approval workflow
@@ -187,26 +199,31 @@ async function ensureDefaultData() {
       await pool.execute("ALTER TABLE users ADD COLUMN status ENUM('pending','approved','rejected','suspended') DEFAULT 'approved'");
       console.log('Added status column to users table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('status column already exists in users table');
+      } else {
+        console.warn('Failed to add status column to users table:', error.message);
+      }
     }
 
     // Update existing users to approved status
     try {
-      await pool.execute("UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''");
-      console.log('Updated existing users to approved status');
+      const result = await pool.execute("UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''");
+      console.log(`Updated ${result[0].affectedRows} existing users to approved status`);
     } catch (error) {
-      // Might fail if no users or column issues, ignore
+      console.warn('Failed to update existing users status:', error.message);
     }
 
     // Update existing users with old roles to new roles
     try {
-      // Convert Admin to Discipline Officer
-      await pool.execute("UPDATE users SET role = 'Discipline Officer' WHERE role = 'Admin'");
-      // Convert Faculty Staff to Discipline Officer
-      await pool.execute("UPDATE users SET role = 'Discipline Officer' WHERE role = 'Faculty Staff'");
-      console.log('Updated existing users with old roles to new roles');
+      let totalUpdated = 0;
+      const adminResult = await pool.execute("UPDATE users SET role = 'Discipline Officer' WHERE role = 'Admin'");
+      totalUpdated += adminResult[0].affectedRows;
+      const facultyResult = await pool.execute("UPDATE users SET role = 'Discipline Officer' WHERE role = 'Faculty Staff'");
+      totalUpdated += facultyResult[0].affectedRows;
+      console.log(`Updated ${totalUpdated} existing users with old roles to new roles`);
     } catch (error) {
-      // Might fail if no users, ignore
+      console.warn('Failed to update existing users roles:', error.message);
     }
 
     // Add contact_number column to students table if it doesn't exist
@@ -214,7 +231,11 @@ async function ensureDefaultData() {
       await pool.execute('ALTER TABLE students ADD COLUMN contact_number VARCHAR(20)');
       console.log('Added contact_number column to students table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('contact_number column already exists in students table');
+      } else {
+        console.warn('Failed to add contact_number column to students table:', error.message);
+      }
     }
 
     // Add email column to students table if it doesn't exist
@@ -222,7 +243,11 @@ async function ensureDefaultData() {
       await pool.execute('ALTER TABLE students ADD COLUMN email VARCHAR(100)');
       console.log('Added email column to students table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('email column already exists in students table');
+      } else {
+        console.warn('Failed to add email column to students table:', error.message);
+      }
     }
 
 
@@ -232,7 +257,11 @@ async function ensureDefaultData() {
       await pool.execute('ALTER TABLE students ADD COLUMN parent_email VARCHAR(100)');
       console.log('Added parent_email column to students table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('parent_email column already exists in students table');
+      } else {
+        console.warn('Failed to add parent_email column to students table:', error.message);
+      }
     }
 
     // Add parent_phone column to students table if it doesn't exist
@@ -240,7 +269,11 @@ async function ensureDefaultData() {
       await pool.execute('ALTER TABLE students ADD COLUMN parent_phone VARCHAR(20)');
       console.log('Added parent_phone column to students table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('parent_phone column already exists in students table');
+      } else {
+        console.warn('Failed to add parent_phone column to students table:', error.message);
+      }
     }
 
     // Add education_level column to students table if it doesn't exist
@@ -248,7 +281,11 @@ async function ensureDefaultData() {
       await pool.execute("ALTER TABLE students ADD COLUMN education_level ENUM('Senior High School', 'College') DEFAULT 'College'");
       console.log('Added education_level column to students table');
     } catch (error) {
-      // Column might already exist, ignore error
+      if (error.code === 'ER_DUP_FIELDNAME') {
+        console.log('education_level column already exists in students table');
+      } else {
+        console.warn('Failed to add education_level column to students table:', error.message);
+      }
     }
 
     // Drop student_id_number column if it exists (no longer needed)
@@ -256,7 +293,11 @@ async function ensureDefaultData() {
       await pool.execute('ALTER TABLE students DROP COLUMN student_id_number');
       console.log('Dropped student_id_number column from students table');
     } catch (error) {
-      // Column might not exist, ignore error
+      if (error.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
+        console.log('student_id_number column does not exist or cannot be dropped');
+      } else {
+        console.warn('Failed to drop student_id_number column from students table:', error.message);
+      }
     }
 
     // Update case_status enum to include Under Review and replace Open with Pending

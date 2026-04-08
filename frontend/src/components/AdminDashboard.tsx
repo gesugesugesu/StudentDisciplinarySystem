@@ -19,6 +19,7 @@ import { StudentList } from "./StudentList";
 import { StudentProfile } from "./StudentProfile";
 import { AllIncidents } from "./AllIncidents";
 import { AddIncidentForm } from "./AddIncidentForm";
+import { AddIncidentDialog } from "./AddIncidentDialog";
 import { CheckCircle, XCircle, UserCheck, UserX, Trash2, Users, Clock, RefreshCw, Eye, Pencil, ChevronLeft, ChevronRight, UserPlus, FileText, AlertTriangle, CheckSquare, XSquare, Search, X, ArrowUpDown, Repeat } from "lucide-react";
 import API_BASE from '../config/api';
 
@@ -68,6 +69,8 @@ export function AdminDashboard() {
   const [fullAccess, setFullAccess] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isAddIncidentDialogOpen, setIsAddIncidentDialogOpen] = useState(false);
+  const [addIncidentPreselectedStudentId, setAddIncidentPreselectedStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -622,8 +625,8 @@ export function AdminDashboard() {
   const suspendedCount = suspendedUsers.length;
   const pendingCount = pendingUsers.length;
 
-  // Filter out resolved incidents for the Incident Reports tab
-  const activeIncidents = incidents.filter(i => i.status !== 'Resolved');
+  // Filter out pending and resolved incidents for the Incident Reports tab (show only Under Review and beyond)
+  const activeIncidents = incidents.filter(i => i.status !== 'Resolved' && i.status !== 'Pending');
   
   // Pagination for incidents
   const incidentsTotalPages = Math.ceil(activeIncidents.length / itemsPerPage);
@@ -1051,7 +1054,7 @@ export function AdminDashboard() {
           {/* All Incidents Section (excluding resolved) */}
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-              <h3 className="text-lg font-semibold">All Incidents ({activeIncidents.length})</h3>
+              <h3 className="text-lg font-semibold">Incidents Under Review ({activeIncidents.length})</h3>
             </div>
             <div className="overflow-x-auto">
             <Table className="w-full">
@@ -1619,7 +1622,10 @@ export function AdminDashboard() {
                 student={students.find(s => s.id === selectedStudent)!}
                 incidents={incidents}
                 onBack={() => setSelectedStudent(null)}
-                onAddIncident={() => {}}
+                onAddIncident={() => {
+                  setAddIncidentPreselectedStudentId(selectedStudent);
+                  setIsAddIncidentDialogOpen(true);
+                }}
                 onDeleteIncident={handleDeleteIncident}
               />
             ) : (
@@ -1980,6 +1986,24 @@ export function AdminDashboard() {
           incident={editIncident}
         />
       )}
+
+      {/* Add Incident Dialog */}
+      <AddIncidentDialog
+        open={isAddIncidentDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddIncidentDialogOpen(open);
+          if (!open) {
+            setAddIncidentPreselectedStudentId(null);
+          }
+        }}
+        onAddIncident={(incident) => {
+          handleAddIncident(incident);
+          setIsAddIncidentDialogOpen(false);
+          setAddIncidentPreselectedStudentId(null);
+        }}
+        students={students}
+        preselectedStudentId={addIncidentPreselectedStudentId || undefined}
+      />
     </div>
   );
 }

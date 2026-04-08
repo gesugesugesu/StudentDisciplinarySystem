@@ -95,22 +95,22 @@ export default function App() {
   const handleAdminLogin = (user: any) => {
     if (user.role === 'Student') {
       // For students, fetch their student record from the database
-      const fetchStudentData = async () => {
+      const fetchStudentData = async (retryCount = 0) => {
         try {
           const token = localStorage.getItem('token');
           // Try with the email from login response
           const emailToQuery = user.email?.trim().toLowerCase();
           console.log('Fetching student data for email:', emailToQuery);
-          
+
           const response = await fetch(`${API_BASE}/students/email/${encodeURIComponent(emailToQuery)}`, {
-            headers: { 
+            headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           });
-          
+
           console.log('Response status:', response.status);
-          
+
           if (response.ok) {
             const studentData = await response.json();
             console.log('Student data found:', studentData);
@@ -119,45 +119,29 @@ export default function App() {
             setIsStudentViewOpen(true);
             fetchIncidents(); // Fetch incidents for student view
             toast.success(`Welcome, ${studentData.name}`);
+          } else if (retryCount < 2) {
+            // Retry up to 2 times with delay to allow backend to create student record
+            console.log(`Student record not found, retrying in 1 second (attempt ${retryCount + 1})`);
+            setTimeout(() => fetchStudentData(retryCount + 1), 1000);
           } else {
-            const errorData = await response.json();
-            console.error('Student not found:', errorData);
-            toast.error(errorData.message || errorData.error || 'Student record not found. Please contact administrator.');
-            
-            // If no student record found, create a temporary student object from user data
-            const student: FetchedStudent = {
-              id: `student-${user.id}`,
-              name: user.fullName,
-              email: user.email,
-              grade: 0,
-              class: '',
-              course: '',
-              educationLevel: ''
-            };
-            setCurrentStudent(student);
-            setCurrentStudentId(student.id);
-            setIsStudentViewOpen(true);
-            fetchIncidents();
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Student not found after retries:', errorData);
+            toast.error('Student record not found. Please contact administrator.');
+            // Redirect to login or show error state
+            handleStudentLogout();
           }
         } catch (error) {
           console.error('Error fetching student data:', error);
-          // Fallback to basic student object
-          const student: FetchedStudent = {
-            id: `student-${user.id}`,
-            name: user.fullName,
-            email: user.email,
-            grade: 0,
-            class: '',
-            course: '',
-            educationLevel: ''
-          };
-          setCurrentStudent(student);
-          setCurrentStudentId(student.id);
-          setIsStudentViewOpen(true);
-          fetchIncidents();
+          if (retryCount < 2) {
+            console.log(`Error fetching student data, retrying in 1 second (attempt ${retryCount + 1})`);
+            setTimeout(() => fetchStudentData(retryCount + 1), 1000);
+          } else {
+            toast.error('Unable to load student data. Please try logging in again.');
+            handleStudentLogout();
+          }
         }
       };
-      
+
       fetchStudentData();
     } else {
       // For admin/faculty staff, show admin dashboard

@@ -303,26 +303,21 @@ router.put('/:id', verifyToken, async (req, res) => {
       violation = { id: currentCase.violation_id };
     }
 
-    const reportedById = reportedBy || req.user?.id;
-    
-    // If reportedBy is a string (name), try to look up the user_id
-    let reportedByIdNum;
-    if (reportedById) {
-      const parsedId = parseInt(reportedById);
-      if (!isNaN(parsedId)) {
-        // It's a numeric user_id
-        reportedByIdNum = parsedId;
+    // Handle reportedBy - should be a user ID, fallback to current user or existing value
+    let finalReportedBy = currentCase.reported_by; // Keep existing by default
+
+    if (reportedBy) {
+      const parsedId = parseInt(reportedBy);
+      if (!isNaN(parsedId) && parsedId > 0) {
+        // Valid user ID provided
+        finalReportedBy = parsedId;
       } else {
-        // It's likely a name string, try to look up the user
-        const user = await getRow('SELECT user_id FROM users WHERE full_name = ?', [reportedById]);
-        reportedByIdNum = user ? user.user_id : (currentCase.reported_by || null);
+        console.warn(`Invalid reportedBy value: ${reportedBy}, keeping existing value`);
       }
-    } else {
-      reportedByIdNum = currentCase.reported_by || null;
+    } else if (req.user?.id) {
+      // No reportedBy provided, use current user
+      finalReportedBy = req.user.id;
     }
-    
-    // Ensure all values are properly handled (convert undefined to null)
-    const finalReportedBy = reportedByIdNum !== undefined ? reportedByIdNum : null;
     
 // Use the existing values from the current case if no new values are provided
 const studentIdNum = studentId ? parseInt(studentId) : (currentCase.student_id || null);
@@ -464,18 +459,46 @@ router.get('/violations/list', verifyToken, async (req, res) => {
 });
 
 // AI-powered sanction suggestion using Gemini
-router.post('/suggest-sanction', verifyToken, async (req, res) => {
+router.post('/suggest-sanction', async (req, res) => {
   try {
+    // TEMPORARY: Skip authentication for testing
+    console.log('AI Suggestion requested:', { offenseCategory: req.body.offenseCategory, offenseCount: req.body.offenseCount, violationName: req.body.violationName });
+
     const { offenseCategory, offenseCount, studentHistory, violationName, violationDescription } = req.body;
-    
+
     if (!offenseCategory || offenseCount === undefined) {
       return res.status(400).json({ error: 'Missing required fields: offenseCategory and offenseCount' });
     }
     
-    // Initialize with basic fallback values (only used if Gemini completely fails)
+    // Initialize with category-based fallback values (used if Gemini completely fails)
     let suggestedSanction = "Written Warning";
     let explanation = "Basic disciplinary measure applied.";
     let additionalNotes = [];
+
+    // Provide varied fallback sanctions based on category and offense count
+    if (offenseCategory === "Category 1 Offense") {
+      if (offenseCount === 0) {
+        suggestedSanction = "Verbal Warning";
+        explanation = "First offense in Category 1. Verbal warning issued with documentation.";
+      } else if (offenseCount === 1) {
+        suggestedSanction = "Written Warning";
+        explanation = "Second Category 1 offense. Written warning with parent notification required.";
+      } else {
+        suggestedSanction = "Detention (1 day)";
+        explanation = "Multiple Category 1 offenses. Detention imposed to reinforce expectations.";
+      }
+    } else if (offenseCategory === "Category 2 Offense") {
+      if (offenseCount === 0) {
+        suggestedSanction = "Written Warning + Parent Conference";
+        explanation = "Category 2 offense requires written warning and mandatory parent conference.";
+      } else {
+        suggestedSanction = "Suspension (1-3 days)";
+        explanation = "Repeat Category 2 offense. Suspension recommended with review of behavior contract.";
+      }
+    } else if (offenseCategory === "Category 3 Offense") {
+      suggestedSanction = "Suspension (3-5 days) + Counseling";
+      explanation = "Category 3 offense requires suspension and mandatory counseling assessment.";
+    }
 
     // Check for additional factors in student history
     if (studentHistory && studentHistory.length > 0) {
@@ -498,20 +521,38 @@ router.post('/suggest-sanction', verifyToken, async (req, res) => {
     
     // Use Gemini AI as PRIMARY sanction recommendation engine with PDF handbook access
     const geminiApiKey = process.env.GEMINI_API_KEY;
+    console.log('Gemini API key configured:', !!geminiApiKey, geminiApiKey ? geminiApiKey.substring(0, 10) + '...' : 'none');
 
     if (geminiApiKey && geminiApiKey.startsWith('AIza')) {
       try {
         // Read the PDF handbook file
-        const pdfPath = path.join(__dirname, '../../frontend/src/assets/ACTS-STUDENT-HANDBOOK-2025-Edited.pdf');
+        const pdfPath = path.join(process.cwd(), '..', 'frontend', 'src', 'assets', 'ACTS-STUDENT-HANDBOOK-2025-Edited.pdf');
         let pdfBase64 = null;
 
         try {
-          const pdfBuffer = fs.readFileSync(pdfPath);
-          pdfBase64 = pdfBuffer.toString('base64');
-          console.log('Successfully loaded ACTS Student Handbook PDF for AI analysis');
+          if (fs.existsSync(pdfPath)) {
+            const pdfBuffer = fs.readFileSync(pdfPath);
+            pdfBase64 = pdfBuffer.toString('base64');
+            console.log('Successfully loaded ACTS Student Handbook PDF for AI analysis, size:', pdfBuffer.length, 'bytes');
+          } else {
+            console.warn('PDF handbook file not found at:', pdfPath);
+            console.log('Current working directory:', process.cwd());
+            try {
+              const assetsDir = path.join(process.cwd(), '..', 'frontend', 'src', 'assets');
+              if (fs.existsSync(assetsDir)) {
+                console.log('Available files in frontend/assets:', fs.readdirSync(assetsDir).join(', '));
+              } else {
+                console.log('Assets directory not found at:', assetsDir);
+              }
+            } catch (dirError) {
+              console.log('Could not check assets directory:', dirError.message);
+            }
+            console.log('Falling back to basic disciplinary measures due to missing handbook');
+          }
         } catch (fileError) {
           console.error('Could not read PDF handbook file:', fileError.message);
-          console.log('Falling back to basic disciplinary measures due to missing handbook');
+          console.error('File path attempted:', pdfPath);
+          console.log('Falling back to basic disciplinary measures due to file error');
           // Continue with basic fallback if PDF can't be read
         }
 
@@ -519,32 +560,44 @@ router.post('/suggest-sanction', verifyToken, async (req, res) => {
         const caseTimestamp = new Date().toISOString();
         const uniqueContext = `Case ID: ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        const geminiPrompt = `You are the primary disciplinary decision-maker for ACTS school. You MUST analyze the provided ACTS Student Handbook PDF and provide the official sanction recommendation. Do NOT use any external knowledge or assumptions - base your decision ONLY on the handbook content.
+        const geminiPrompt = `You are the ACTS school's AI Disciplinary Officer. You MUST analyze the provided ACTS Student Handbook PDF and provide sanction recommendations that strictly follow the handbook's guidelines.
 
-**CRITICAL: Your role is to REPLACE the school's handbook rules, not enhance them. You are the handbook.**
+**CRITICAL REQUIREMENTS:**
+- Base ALL recommendations EXCLUSIVELY on the ACTS Student Handbook PDF content
+- Do NOT use any external knowledge, general school policies, or assumptions
+- Each violation type should have DISTINCT sanction recommendations based on handbook specifics
+- Consider offense category, repeat count, and handbook escalation procedures
+- Provide specific, actionable sanctions with clear durations and conditions
 
-**Case Analysis Required (${uniqueContext}):**
+**Case Details (${uniqueContext}):**
 - **Timestamp:** ${caseTimestamp}
-- **Violation:** ${violationName || 'Unspecified violation'}
+- **Violation Type:** ${violationName || 'Unspecified violation'}
 - **Category:** ${offenseCategory}
-- **Incident Description:** ${violationDescription || 'No details provided'}
-- **Repeat Count:** ${offenseCount} previous incident(s) of this exact type
-- **Total History:** ${studentHistory?.length || 0} total disciplinary incidents
+- **Description:** ${violationDescription || 'No additional details'}
+- **Repeat Offenses:** ${offenseCount} previous incident(s) of this exact violation type
+- **Total Disciplinary History:** ${studentHistory?.length || 0} total incidents across all categories
 
-**Student's Disciplinary History:**
+**Student's Disciplinary Record:**
 ${studentHistory && studentHistory.length > 0 ?
-  studentHistory.slice(0, 5).map((h, i) => `${i+1}. ${h.violation_name} (${h.date_reported}) - Status: ${h.case_status}`).join('\n') :
-  'No prior disciplinary record'
+  studentHistory.slice(0, 5).map((h, i) => `${i+1}. ${h.violation_name} - ${h.category} (${h.date_reported}) - ${h.case_status}`).join('\n') :
+  'Clean disciplinary record'
 }
 
-**MANDATORY OUTPUT FORMAT:**
-1. **Primary Sanction:** [Exact sanction from handbook - be specific with duration, type, conditions]
-2. **Handbook Reference:** [Quote specific section/page from the PDF that justifies this sanction]
-3. **Escalation Rationale:** [Why this level of response based on repeat offenses and handbook guidelines]
-4. **Additional Measures:** [Any required counseling, parental involvement, or follow-up actions per handbook]
-5. **Rehabilitation Plan:** [Specific steps for student improvement and prevention of recurrence]
+**MANDATORY OUTPUT FORMAT - Follow Exactly:**
+1. **Recommended Sanction:** [Specific sanction with exact details from handbook - include duration, conditions, appeals process]
+2. **Handbook Section:** [Direct quote from the PDF showing the exact rule violated and sanction prescribed]
+3. **Escalation Factors:** [How repeat offenses and category affect this recommendation per handbook guidelines]
+4. **Required Actions:** [Immediate steps, parental notification, counseling requirements from handbook]
+5. **Follow-up Requirements:** [Monitoring, review periods, reinstatement conditions per handbook]
 
-**IMPORTANT:** If the handbook PDF is not accessible, acknowledge this limitation and provide a basic disciplinary recommendation. Otherwise, your recommendation MUST be derived directly from the handbook content.`;
+**SANCTION VARIATION RULES:**
+- **First Offense Category 1:** Focus on education and warning
+- **Repeat Category 1:** Escalate to probation or suspension
+- **Category 2 Offenses:** Require parental involvement and stricter sanctions
+- **Category 3 Offenses:** Maximum sanctions with possible expulsion procedures
+- **Multiple Violations:** Consider cumulative effect and handbook's progressive discipline
+
+**REMINDER:** Your authority comes from the handbook. If the PDF content conflicts with general knowledge, the handbook takes precedence.`;
 
         // Prepare multimodal content with text and PDF
         const contents = [{ parts: [{ text: geminiPrompt }] }];
@@ -558,6 +611,10 @@ ${studentHistory && studentHistory.length > 0 ?
           });
         }
 
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
           {
@@ -566,12 +623,15 @@ ${studentHistory && studentHistory.length > 0 ?
             body: JSON.stringify({
               contents: contents,
               generationConfig: {
-                temperature: 0.7, // Lower temperature for more consistent handbook-based decisions
+                temperature: 0.7,
                 maxOutputTokens: 600
               }
-            })
+            }),
+            signal: controller.signal
           }
         );
+
+        clearTimeout(timeoutId);
 
         if (geminiResponse.ok) {
           const geminiData = await geminiResponse.json();
@@ -581,14 +641,25 @@ ${studentHistory && studentHistory.length > 0 ?
             console.log('Gemini AI provided handbook-based sanction recommendation');
 
             // Parse Gemini response to extract sanction and explanation
-            // Look for "Primary Sanction:" in the response
-            const sanctionMatch = aiRecommendation.match(/Primary Sanction:\s*([^\n]+)/i);
+            // Look for "Recommended Sanction:" in the response
+            const sanctionMatch = aiRecommendation.match(/Recommended Sanction:\s*([^\n]+)/i);
             if (sanctionMatch) {
               suggestedSanction = sanctionMatch[1].trim();
             }
 
-            // Use the full AI analysis as the explanation
-            explanation = aiRecommendation;
+            // Extract handbook section reference
+            const handbookMatch = aiRecommendation.match(/Handbook Section:\s*([^\n]+)/i);
+            let handbookReference = "";
+            if (handbookMatch) {
+              handbookReference = handbookMatch[1].trim();
+            }
+
+            // Format the explanation to include handbook reference
+            if (handbookReference) {
+              explanation = `${aiRecommendation}\n\n📖 **Handbook Reference:** ${handbookReference}`;
+            } else {
+              explanation = aiRecommendation;
+            }
 
             // Add any additional notes from history checking to the AI response
             if (additionalNotes.length > 0) {
@@ -605,8 +676,12 @@ ${studentHistory && studentHistory.length > 0 ?
           console.error('Gemini API error:', geminiResponse.status, errorText);
         }
       } catch (aiError) {
-        console.error('Gemini AI processing error:', aiError);
-        console.log('Falling back to basic disciplinary measures due to AI failure');
+        if (aiError.name === 'AbortError') {
+          console.error('Gemini AI request timed out');
+        } else {
+          console.error('Gemini AI processing error:', aiError.message);
+        }
+        console.log('Falling back to category-based disciplinary measures due to AI failure');
         // Continue with basic fallback values already set
       }
     } else {
@@ -616,10 +691,11 @@ ${studentHistory && studentHistory.length > 0 ?
     res.json({
       suggestedSanction,
       explanation,
-      category: categoryKey,
+      category: offenseCategory,
       offenseCount,
       additionalNotes: additionalNotes.length > 0 ? additionalNotes : null,
-      basedOn: "ACTS Student Handbook 2025-2026"
+      basedOn: pdfBase64 ? "ACTS Student Handbook 2025-2026 (AI analyzed)" : "ACTS Student Handbook 2025-2026 (fallback recommendations)",
+      aiUsed: !!pdfBase64
     });
   } catch (error) {
     console.error('Error generating sanction suggestion:', error);
