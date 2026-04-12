@@ -71,21 +71,21 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" size="sm">
                 <LogOut className="h-4 w-4 mr-0 sm:mr-2" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
-                <AlertDialogDescription>
+              <AlertDialogHeader className="space-y-3">
+                <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
+                <AlertDialogDescription className="text-base">
                   Are you sure you want to log out? You will need to enter your email again to view your records.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onLogout}>
+              <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onLogout} className="w-full sm:w-auto">
                   Logout
                 </AlertDialogAction>
               </AlertDialogFooter>

@@ -63,6 +63,18 @@ export function Register() {
     return passwordRegex.test(password);
   };
 
+  const validateContactNumber = (contactNumber: string) => {
+    // PH format: 11 digits starting with 09 (e.g., 09123456789)
+    const phPhoneRegex = /^09\d{9}$/;
+    return phPhoneRegex.test(contactNumber);
+  };
+
+  const handleContactNumberChange = (value: string) => {
+    // Only allow digits, max 11 characters
+    const digitsOnly = value.replace(/\D/g, '').slice(0, 11);
+    setFormData(prev => ({ ...prev, contactNumber: digitsOnly }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -81,6 +93,13 @@ export function Register() {
     // Additional validation for students
     if (role === 'Student' && (!contactNumber || !yearLevel)) {
       setError("Contact number and year level are required for students");
+      setLoading(false);
+      return;
+    }
+
+    // Contact number validation for students
+    if (role === 'Student' && contactNumber && !validateContactNumber(contactNumber)) {
+      setError("Contact number must be 11 digits starting with 09 (e.g., 09123456789)");
       setLoading(false);
       return;
     }
@@ -271,8 +290,8 @@ export function Register() {
                   id="contactNumber"
                   type="tel"
                   value={formData.contactNumber}
-                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                  placeholder="Enter your contact number"
+                  onChange={(e) => handleContactNumberChange(e.target.value)}
+                  placeholder="09XXXXXXXXX (11 digits)"
                 />
               </div>
               <div className="space-y-2">
