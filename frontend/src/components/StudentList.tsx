@@ -14,12 +14,6 @@ interface StudentListProps {
 export function StudentList({ students, incidents, onSelectStudent }: StudentListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   
-  const getOrdinalSuffix = (n: number) => {
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return s[(v - 20) % 10] || s[v] || s[0];
-  };
-  
   const getIncidentCount = (studentId: string) => {
     return incidents.filter(i => i.studentId === studentId).length;
   };
@@ -70,7 +64,7 @@ export function StudentList({ students, incidents, onSelectStudent }: StudentLis
                 <div className="flex-1 min-w-0">
                   <h4 className="truncate">{student.name}</h4>
                   <p className="text-muted-foreground">
-                    {student.course || (student.grade ? `Grade ${student.grade}` : '')} {student.course && student.grade ? `• ${student.grade}${getOrdinalSuffix(student.grade)} Year` : ''}
+                    {student.class || student.course || (student.grade ? `Grade ${student.grade}` : '')}
                   </p>
                   <p className="text-muted-foreground truncate">{student.email}</p>
                   

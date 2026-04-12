@@ -7,8 +7,9 @@ const router = express.Router();
 // Helper function to format class level
 function formatClassLevel(yearLevel) {
   if (!yearLevel) return '';
-  const suffixes = ['', 'st', 'nd', 'rd'];
-  return `${yearLevel}${suffixes[yearLevel] || 'th'} Year`;
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const v = yearLevel % 100;
+  return `${yearLevel}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]} Year`;
 }
 
 // Get all students
@@ -32,12 +33,7 @@ router.get('/', verifyToken, async (req, res) => {
 
     // Transform to match frontend expectations
     const transformedStudents = students.map(student => {
-      let classLevel = '';
-      if (student.yearLevel) {
-        const suffixes = ['', 'st', 'nd', 'rd'];
-        const suffix = suffixes[student.yearLevel] || 'th';
-        classLevel = `${student.yearLevel}${suffix} Year`;
-      }
+      const classLevel = formatClassLevel(student.yearLevel);
       return {
         id: student.id.toString(),
         name: student.name,
@@ -92,7 +88,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       lastName: student.last_name,
       grade: student.yearLevel || 0,
       course: student.course || '',
-      class: student.yearLevel ? `${student.yearLevel}th Year` : '',
+      class: formatClassLevel(student.yearLevel),
       yearLevel: student.yearLevel,
       educationLevel: 'College',
       email: student.email || '',
@@ -180,7 +176,7 @@ router.get('/email/:email', async (req, res) => {
       lastName: student.last_name,
       grade: student.yearLevel || 0,
       course: student.course || '',
-      class: student.yearLevel ? `${student.yearLevel}th Year` : '',
+      class: formatClassLevel(student.yearLevel),
       yearLevel: student.yearLevel,
       educationLevel: 'College',
       email: student.email || '',
@@ -235,7 +231,7 @@ router.post('/', verifyToken, async (req, res) => {
       id: newStudent.id.toString(),
       name: newStudent.name,
       grade: newStudent.grade || '',
-      class: newStudent.yearLevel ? `Year ${newStudent.yearLevel}` : '',
+      class: formatClassLevel(newStudent.yearLevel),
       email: '',
       status: newStudent.status
     };
