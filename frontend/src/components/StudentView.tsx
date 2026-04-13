@@ -6,7 +6,7 @@ import { User, Mail, GraduationCap, LogOut, AlertCircle, Clock, CheckCircle, Pho
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { toast } from "sonner";
 import API_BASE from "../config/api";
@@ -29,6 +29,21 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
   
   // The student prop now contains all the data fetched from the database
   const studentIncidents = incidents.filter(i => i.studentId === student.id);
@@ -78,7 +93,7 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
           
           <div className="flex items-center gap-3">
             {/* Mobile: Burger menu button with overlay dropdown */}
-            <div className="relative lg:hidden">
+            <div className="relative lg:hidden" ref={mobileMenuRef}>
               <Button 
                 variant="outline" 
                 size="sm" 

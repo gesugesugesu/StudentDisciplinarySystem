@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
@@ -63,6 +63,21 @@ export default function App() {
   const [currentStudent, setCurrentStudent] = useState<FetchedStudent | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   // Check for valid token on mount and restore session
   useEffect(() => {
@@ -425,7 +440,7 @@ export default function App() {
             
             <div className="flex items-center gap-3">
               {/* Mobile: Burger menu button with overlay dropdown */}
-              <div className="relative lg:hidden">
+              <div className="relative lg:hidden" ref={mobileMenuRef}>
                 <Button 
                   variant="outline" 
                   size="sm" 
