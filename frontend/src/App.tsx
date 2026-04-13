@@ -13,9 +13,10 @@ import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { StudentView } from "./components/StudentView";
 import { AdminDashboard } from "./components/AdminDashboard";
+import { ChangePasswordDialog } from "./components/ChangePasswordDialog";
 // Removed mock data import
 import { Incident, CommunicationLog, UserRole, Student } from "./types";
-import { LogOut } from "lucide-react";
+import { LogOut, Menu, User } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./components/ui/alert-dialog";
@@ -43,6 +44,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Authentication state
+  const [isLoading, setIsLoading] = useState(true);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(() => {
     const userStr = localStorage.getItem('user');
@@ -59,6 +61,90 @@ export default function App() {
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
   const [currentStudent, setCurrentStudent] = useState<FetchedStudent | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+
+  // Check for valid token on mount and restore session
+  useEffect(() => {
+    const restoreSession = async () => {
+      // Check if this is first visit - clear session on first load
+      const hasVisitedBefore = sessionStorage.getItem('hasVisitedBefore');
+      
+      if (!hasVisitedBefore) {
+        sessionStorage.setItem('hasVisitedBefore', 'true');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsLoading(false);
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      // If no token or user, show login
+      if (!token || !userStr) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(userStr);
+        
+        // Verify token with backend
+        const response = await fetch(`${API_BASE}/auth/verify`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          // Token is valid, restore session
+          if (user.role === 'Student') {
+            // Restore student view
+            const emailToQuery = user.email?.trim().toLowerCase();
+            const studentResponse = await fetch(`${API_BASE}/students/email/${encodeURIComponent(emailToQuery)}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (studentResponse.ok) {
+              const studentData = await studentResponse.json();
+              setCurrentStudent(studentData);
+              setCurrentStudentId(studentData.id);
+              setIsStudentViewOpen(true);
+              fetchIncidents();
+            } else {
+              // Student record not found, clear session
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+            }
+          } else if (user.role === 'Super Admin' || user.role === 'Discipline Officer') {
+            // Restore admin/faculty session
+            setCurrentUserRole(user.role);
+            setIsAdminLoggedIn(true);
+            fetchStudents();
+            fetchIncidents();
+          } else {
+            // Invalid role, clear session
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        } else {
+          // Token invalid, clear localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        console.error('Error restoring session:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+      
+      setIsLoading(false);
+    };
+    
+    restoreSession();
+  }, []);
 
   const fetchStudents = async () => {
     try {
@@ -169,6 +255,31 @@ export default function App() {
     setCurrentStudent(null);
     toast.success("Returned to main page");
   };
+
+  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Password changed successfully");
+        setIsChangePasswordOpen(false);
+      } else {
+        toast.error(data.error || "Failed to change password");
+      }
+    } catch (error) {
+      toast.error("Error changing password");
+    }
+  };
   
   const handleAddIncident = async (newIncident: Omit<Incident, "id">) => {
     try {
@@ -250,6 +361,21 @@ export default function App() {
     ? dbStudents.find((s: Student) => s.id === selectedStudentId) || null
     : null;
   
+  // Show loading while restoring session
+  if (isLoading) {
+    return (
+      <>
+        <Toaster />
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Restoring session...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+  
   // Show student view if student is viewing their records
   if (isStudentViewOpen && currentStudent) {
     return (
@@ -298,28 +424,90 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-3">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <LogOut className="h-4 w-4 mr-0 sm:mr-2" />
-                    <span className="hidden sm:inline">Logout</span>
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader className="space-y-3">
-                    <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base">
-                      Are you sure you want to log out of your account? You will need to log in again to access the admin dashboard.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                    <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                    <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleAdminLogout} className="w-full sm:w-auto">
+              {/* Mobile: Burger menu button with overlay dropdown */}
+              <div className="relative lg:hidden">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                >
+                  <Menu className="h-4 w-4" />
+                </Button>
+                {/* Mobile dropdown - properly aligned, no overflow */}
+                {isMobileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 bg-card border rounded-xl shadow-xl p-2 z-50 max-w-[90vw] box-border" style={{ right: '10px' }}>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full text-left"
+                      onClick={() => {
+                        setIsChangePasswordOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Change Password
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full text-left mt-1">
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="w-[90vw] max-w-md">
+                        <AlertDialogHeader className="text-center sm:text-left">
+                          <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
+                          <AlertDialogDescription className="text-base">
+                            Are you sure you want to log out of your account? You will need to log in again to access the admin dashboard.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                          <AlertDialogCancel className="sm:min-w-[100px]">Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleAdminLogout} className="sm:min-w-[100px]">
+                            Logout
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+              </div>
+              
+              {/* Desktop: Always visible buttons */}
+              <div className="hidden lg:flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsChangePasswordOpen(true)}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Change Password
+                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <LogOut className="h-4 w-4 mr-2" />
                       Logout
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="w-[90vw] max-w-md">
+                    <AlertDialogHeader className="text-center sm:text-left">
+                      <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
+                      <AlertDialogDescription className="text-base">
+                        Are you sure you want to log out of your account? You will need to log in again to access the admin dashboard.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                      <AlertDialogCancel className="sm:min-w-[100px]">Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleAdminLogout} className="sm:min-w-[100px]">
+                        Logout
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           </div>
         </div>
@@ -397,6 +585,13 @@ export default function App() {
           incident={selectedIncident}
         />
       )}
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+        onSave={handleChangePassword}
+      />
     </div>
   );
 }

@@ -2,11 +2,14 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import logo from "../assets/6ca5c626f02129b600665afa033d23b2d70032b4.png";
-import { User, Mail, GraduationCap, LogOut, AlertCircle, Clock, CheckCircle, Phone } from "lucide-react";
+import { User, Mail, GraduationCap, LogOut, AlertCircle, Clock, CheckCircle, Phone, Menu } from "lucide-react";
 import { Student, Incident } from "../types";
 import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { useState } from "react";
+import { ChangePasswordDialog } from "./ChangePasswordDialog";
+import { toast } from "sonner";
+import API_BASE from "../config/api";
 
 interface StudentViewProps {
   student: Student & {
@@ -24,6 +27,9 @@ interface StudentViewProps {
 
 export function StudentView({ student, incidents, onLogout }: StudentViewProps) {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  
   // The student prop now contains all the data fetched from the database
   const studentIncidents = incidents.filter(i => i.studentId === student.id);
   const pendingIncidents = studentIncidents.filter(i => i.status === "Pending").length;
@@ -69,31 +75,96 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
               <h1 className="text-lg">D-Manage: Student Portal</h1>
             </div>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <LogOut className="h-4 w-4 mr-0 sm:mr-2" />
-                <span className="hidden sm:inline">Logout</span>
+          
+          <div className="flex items-center gap-3">
+            {/* Mobile: Burger menu button with overlay dropdown */}
+            <div className="relative lg:hidden">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <Menu className="h-4 w-4" />
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader className="space-y-3">
-                <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
-                <AlertDialogDescription className="text-base">
-                  Are you sure you want to log out? You will need to enter your email again to view your records.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onLogout} className="w-full sm:w-auto">
-                  Logout
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              {/* Mobile dropdown - properly aligned, no overflow */}
+              {isMobileMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 bg-white border rounded-xl shadow-xl p-2 z-50 max-w-[90vw] box-border" style={{ right: '10px' }}>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full text-left"
+                    onClick={() => {
+                      setIsChangePasswordOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Change Password
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full text-left mt-1">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="w-[90vw] max-w-md">
+                      <AlertDialogHeader className="text-center sm:text-left">
+                        <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
+                        <AlertDialogDescription className="text-base">
+                          Are you sure you want to log out? You will need to enter your email again to view your records.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                        <AlertDialogCancel className="sm:min-w-[100px]">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={onLogout} className="sm:min-w-[100px]">
+                          Logout
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
+            </div>
+            
+            {/* Desktop: Always visible buttons */}
+            <div className="hidden lg:flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsChangePasswordOpen(true)}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Change Password
+              </Button>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="w-[90vw] max-w-md">
+                  <AlertDialogHeader className="text-center sm:text-left">
+                    <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
+                    <AlertDialogDescription className="text-base">
+                      Are you sure you want to log out? You will need to enter your email again to view your records.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <AlertDialogCancel className="sm:min-w-[100px]">Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onLogout} className="sm:min-w-[100px]">
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
         </div>
       </header>
-
+      
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Student Profile */}
         <Card className="p-6">
@@ -250,6 +321,36 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
 
 
       </main>
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+        onSave={async (currentPassword, newPassword) => {
+          try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE}/auth/change-password`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ currentPassword, newPassword })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              toast.success("Password changed successfully");
+              setIsChangePasswordOpen(false);
+            } else {
+              toast.error(data.error || "Failed to change password");
+            }
+          } catch (error) {
+            toast.error("Error changing password");
+          }
+        }}
+      />
     </div>
   );
 }
