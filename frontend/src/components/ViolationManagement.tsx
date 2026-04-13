@@ -375,7 +375,7 @@ export function ViolationManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction onClick={confirmDelete}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
