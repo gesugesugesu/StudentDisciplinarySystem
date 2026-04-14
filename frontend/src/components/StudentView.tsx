@@ -116,28 +116,15 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
                     <User className="h-4 w-4 mr-2" />
                     Change Password
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full text-left mt-1">
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="w-[90vw] max-w-md">
-                      <AlertDialogHeader className="text-center sm:text-left">
-                        <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
-                        <AlertDialogDescription className="text-base">
-                          Are you sure you want to log out? You will need to enter your email again to view your records.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                        <AlertDialogCancel className="sm:min-w-[100px]">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={onLogout} className="sm:min-w-[100px]">
-                          Logout
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-left mt-1"
+                    onClick={() => setShowLogoutDialog(true)}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 </div>
               )}
             </div>
@@ -149,36 +136,47 @@ export function StudentView({ student, incidents, onLogout }: StudentViewProps) 
                 size="sm" 
                 onClick={() => setIsChangePasswordOpen(true)}
               >
-                <User className="h-4 w-4 mr-2" />
+<User className="h-4 w-4 mr-2" />
                 Change Password
               </Button>
               
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="w-[90vw] max-w-md">
-                  <AlertDialogHeader className="text-center sm:text-left">
-                    <AlertDialogTitle className="text-xl">Confirm Logout</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base">
-                      Are you sure you want to log out? You will need to enter your email again to view your records.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                    <AlertDialogCancel className="sm:min-w-[100px]">Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onLogout} className="sm:min-w-[100px]">
-                      Logout
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button variant="outline" size="sm" onClick={() => setShowLogoutDialog(true)}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
       </header>
+      
+      {/* Custom Logout Modal */}
+      {showLogoutDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg border shadow-lg p-6 w-[90vw] max-w-md">
+            <h2 className="text-xl font-semibold mb-2">Confirm Logout</h2>
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to log out? You will need to enter your email again to view your records.
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <button 
+                onClick={() => setShowLogoutDialog(false)}
+                className="px-4 py-2 border rounded-md hover:bg-accent hover:text-accent-foreground"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLogoutDialog(false);
+                  onLogout();
+                }}
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Student Profile */}
