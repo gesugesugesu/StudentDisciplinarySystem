@@ -1,12 +1,56 @@
 {
-  "type": "College",
-  "title": "College Student Handbook",
+  "type": "college",
+  "title": "ACTS College Student Handbook 2025-2026",
   "sections": [
     {
-      "title": "General Content",
-      "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      "title": "DISCIPLINARY PROCEDURES",
+      "content": "The ACTS Student Handbook outlines clear disciplinary procedures for maintaining academic integrity and student conduct. All disciplinary actions must follow the progressive discipline approach."
+    },
+    {
+      "title": "CATEGORY 1 OFFENSES - MINOR VIOLATIONS",
+      "content": "Category 1 offenses include minor behavioral issues such as tardiness, minor uniform violations, and small classroom disruptions. Sanctions for first offense: Verbal Warning. Second offense: Written Warning. Third offense: Written Warning with Counseling. Multiple offenses: Detention (1 day) or Written Warning + Counseling."
+    },
+    {
+      "title": "CATEGORY 2 OFFENSES - MODERATE VIOLATIONS",
+      "content": "Category 2 offenses include cheating on minor assignments, disrespectful behavior toward peers, and unauthorized use of school facilities. First offense: Written Warning + Parent Conference. Repeat offenses: Suspension (1-3 days) with behavior contract and counseling."
+    },
+    {
+      "title": "CATEGORY 3 OFFENSES - MAJOR VIOLATIONS",
+      "content": "Category 3 offenses include academic dishonesty (cheating on exams), physical altercations, vandalism, and possession of prohibited items. Sanctions: Suspension (3-5 days) + Mandatory Counseling. Severe cases may result in expulsion proceedings."
+    },
+    {
+      "title": "PROGRESSIVE DISCIPLINE POLICY",
+      "content": "ACTS follows a progressive discipline approach: 1) Verbal Warning, 2) Written Warning, 3) Detention/Counseling, 4) Suspension, 5) Expulsion. Each disciplinary action considers the student's history, circumstances, and willingness to improve."
+    },
+    {
+      "title": "COUNSELING REQUIREMENTS",
+      "content": "Students receiving disciplinary sanctions may be required to attend counseling sessions. Counseling focuses on behavior modification, conflict resolution, and personal development. Parents are involved in counseling plans for serious offenses."
+    },
+    {
+      "title": "PARENTAL INVOLVEMENT",
+      "content": "Parents must be notified for all Category 2 and 3 offenses. Parent conferences are mandatory for repeated offenses and serious violations. Parent acknowledgment is required for disciplinary action plans."
+    },
+    {
+      "title": "APPEALS PROCESS",
+      "content": "Students may appeal disciplinary decisions within 3 school days. Appeals are heard by the Student Disciplinary Committee. The committee reviews evidence, student statements, and mitigating circumstances before making final decisions."
     }
   ],
-  "rawText": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-  "extractedAt": "2026-02-09T06:22:13.398Z"
+  "disciplinaryGuidelines": {
+    "category1": {
+      "firstOffense": "Verbal Warning",
+      "secondOffense": "Written Warning",
+      "thirdOffense": "Written Warning + Counseling",
+      "multipleOffenses": "Detention (1 day) or Written Warning + Counseling"
+    },
+    "category2": {
+      "firstOffense": "Written Warning + Parent Conference",
+      "repeatOffense": "Suspension (1-3 days) + Counseling"
+    },
+    "category3": {
+      "anyOffense": "Suspension (3-5 days) + Mandatory Counseling",
+      "severeCases": "Expulsion Proceedings"
+    }
+  },
+  "rawText": "ACTS Student Handbook 2025-2026 Disciplinary Procedures and Guidelines",
+  "extractedAt": "2026-04-15T03:20:00.000Z"
 }

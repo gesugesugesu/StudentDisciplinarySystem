@@ -464,6 +464,7 @@ router.post('/suggest-sanction', async (req, res) => {
   let explanation = "Basic disciplinary measure applied.";
   let additionalNotes = [];
   let aiUsedSuccessfully = false;
+  let handbookContent = "";
   let offenseCategory = req.body.offenseCategory;
   let offenseCount = req.body.offenseCount;
   let studentHistory = req.body.studentHistory;
@@ -472,6 +473,42 @@ router.post('/suggest-sanction', async (req, res) => {
 
   try {
     console.log('AI Suggestion requested:', { offenseCategory, offenseCount, violationName });
+
+    // Load handbook content for AI analysis
+    try {
+      const handbookPath = path.join(__dirname, '../scripts/extracted-handbooks/college-handbook.json');
+      if (fs.existsSync(handbookPath)) {
+        const handbookData = JSON.parse(fs.readFileSync(handbookPath, 'utf-8'));
+        handbookContent = handbookData.sections.map(section =>
+          `${section.title}:\n${section.content}`
+        ).join('\n\n');
+
+        // Use handbook guidelines for fallback sanctions
+        if (handbookData.disciplinaryGuidelines) {
+          const guidelines = handbookData.disciplinaryGuidelines;
+          if (offenseCategory === "Category 1 Offense") {
+            if (offenseCount === 0) {
+              suggestedSanction = guidelines.category1.firstOffense;
+            } else if (offenseCount === 1) {
+              suggestedSanction = guidelines.category1.secondOffense;
+            } else if (offenseCount === 2) {
+              suggestedSanction = guidelines.category1.thirdOffense;
+            } else {
+              suggestedSanction = guidelines.category1.multipleOffenses;
+            }
+          } else if (offenseCategory === "Category 2 Offense") {
+            suggestedSanction = offenseCount === 0 ?
+              guidelines.category2.firstOffense :
+              guidelines.category2.repeatOffense;
+          } else if (offenseCategory === "Category 3 Offense") {
+            suggestedSanction = guidelines.category3.anyOffense;
+          }
+          explanation = `Based on ACTS Student Handbook guidelines for ${offenseCategory}`;
+        }
+      }
+    } catch (handbookError) {
+      console.warn('Could not load handbook data:', handbookError.message);
+    }
 
     if (!offenseCategory || offenseCount === undefined) {
       return res.status(400).json({ error: 'Missing required fields: offenseCategory and offenseCount' });
@@ -491,8 +528,8 @@ router.post('/suggest-sanction', async (req, res) => {
         suggestedSanction = "Written Warning";
         explanation = "Second Category 1 offense. Written warning with parent notification required.";
       } else {
-        suggestedSanction = "Detention (1 day)";
-        explanation = "Multiple Category 1 offenses. Detention imposed to reinforce expectations.";
+        suggestedSanction = "Written Warning + Counseling";
+        explanation = "Multiple Category 1 offenses. Written warning with mandatory counseling required.";
       }
     } else if (offenseCategory === "Category 2 Offense") {
       if (offenseCount === 0) {
@@ -568,10 +605,13 @@ router.post('/suggest-sanction', async (req, res) => {
         const caseTimestamp = new Date().toISOString();
         const uniqueContext = `Case ID: ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        const geminiPrompt = `You are the ACTS school's AI Disciplinary Officer. You MUST analyze the provided ACTS Student Handbook PDF and provide sanction recommendations that strictly follow the handbook's guidelines.
+        const geminiPrompt = `You are the ACTS school's AI Disciplinary Officer. You MUST analyze the provided ACTS Student Handbook content and provide sanction recommendations that strictly follow the handbook's guidelines.
+
+**HANDBOOK CONTENT:**
+${handbookContent}
 
 **CRITICAL REQUIREMENTS:**
-- Base ALL recommendations EXCLUSIVELY on the ACTS Student Handbook PDF content
+- Base ALL recommendations EXCLUSIVELY on the ACTS Student Handbook content provided above
 - Do NOT use any external knowledge, general school policies, or assumptions
 - Each violation type should have DISTINCT sanction recommendations based on handbook specifics
 - Consider offense category, repeat count, and handbook escalation procedures
@@ -593,19 +633,12 @@ ${studentHistory && studentHistory.length > 0 ?
 
 **MANDATORY OUTPUT FORMAT - Follow Exactly:**
 1. **Recommended Sanction:** [Specific sanction with exact details from handbook - include duration, conditions, appeals process]
-2. **Handbook Section:** [Direct quote from the PDF showing the exact rule violated and sanction prescribed]
+2. **Handbook Section:** [Direct quote from the handbook showing the exact rule violated and sanction prescribed]
 3. **Escalation Factors:** [How repeat offenses and category affect this recommendation per handbook guidelines]
 4. **Required Actions:** [Immediate steps, parental notification, counseling requirements from handbook]
 5. **Follow-up Requirements:** [Monitoring, review periods, reinstatement conditions per handbook]
 
-**SANCTION VARIATION RULES:**
-- **First Offense Category 1:** Focus on education and warning
-- **Repeat Category 1:** Escalate to probation or suspension
-- **Category 2 Offenses:** Require parental involvement and stricter sanctions
-- **Category 3 Offenses:** Maximum sanctions with possible expulsion procedures
-- **Multiple Violations:** Consider cumulative effect and handbook's progressive discipline
-
-**REMINDER:** Your authority comes from the handbook. If the PDF content conflicts with general knowledge, the handbook takes precedence.`;
+**REMINDER:** Your authority comes from the handbook content provided above. Use the disciplinary guidelines and progressive discipline policy outlined in the handbook.`;
 
         // Prepare multimodal content with text and PDF
         const contents = [{ parts: [{ text: geminiPrompt }] }];
@@ -703,7 +736,7 @@ ${studentHistory && studentHistory.length > 0 ?
       category: offenseCategory,
       offenseCount,
       additionalNotes: additionalNotes.length > 0 ? additionalNotes : null,
-      basedOn: aiUsedSuccessfully ? "ACTS Student Handbook 2025-2026 (AI analyzed)" : "ACTS Student Handbook 2025-2026 (fallback recommendations)",
+      basedOn: aiUsedSuccessfully ? "ACTS College Student Handbook 2025-2026 (AI analyzed)" : "ACTS College Student Handbook 2025-2026 (fallback recommendations)",
       aiUsed: aiUsedSuccessfully
     });
   } catch (error) {
@@ -714,7 +747,7 @@ ${studentHistory && studentHistory.length > 0 ?
       category: offenseCategory,
       offenseCount,
       additionalNotes: additionalNotes.length > 0 ? additionalNotes : null,
-      basedOn: aiUsedSuccessfully ? "ACTS Student Handbook 2025-2026 (AI analyzed)" : "ACTS Student Handbook 2025-2026 (fallback recommendations)",
+      basedOn: aiUsedSuccessfully ? "ACTS College Student Handbook 2025-2026 (AI analyzed)" : "ACTS College Student Handbook 2025-2026 (fallback recommendations)",
       aiUsed: !!pdfBase64
     });
   }

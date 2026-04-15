@@ -2,14 +2,14 @@ const Tesseract = require('tesseract.js');
 const fs = require('fs');
 const path = require('path');
 const pdfPoppler = require('pdf-poppler');
-const pdf = require('pdf-parse');
+const pdfParse = require('pdf-parse');
 
 // Handbook files to process
 const handbookFiles = [
   {
-    name: 'ACTS College Student Handbook 2025-2026',
+    name: 'ACTS Student Handbook 2025-2026',
     path: path.join(__dirname, '../../frontend/src/assets/ACTS-STUDENT-HANDBOOK-2025-Edited.pdf'),
-    type: 'college'
+    type: 'ACTS'
   }
 ];
 
@@ -40,7 +40,7 @@ async function extractTextFromPDF(pdfPath, handbookName) {
     // Try direct PDF parsing first (much faster and more reliable)
     console.log(`📄 Attempting direct PDF text extraction...`);
     const pdfBuffer = fs.readFileSync(pdfPath);
-    const pdfData = await pdf(pdfBuffer);
+    const pdfData = await pdfParse(pdfBuffer);
 
     const extractedText = pdfData.text;
     console.log(`✅ Direct PDF parsing successful!`);
@@ -57,27 +57,69 @@ async function extractTextFromPDF(pdfPath, handbookName) {
     console.log(`🔄 Falling back to OCR extraction...`);
 
     // Fallback to OCR extraction
+    // Read the PDF file as a buffer
     const pdfBuffer = fs.readFileSync(pdfPath);
 
-    console.log(`📊 File size: ${(pdfBuffer.length / 1024).toFixed(2)} KB`);
+  console.log(`📊 File size: ${(pdfBuffer.length / 1024).toFixed(2)} KB`);
 
-    // Create temporary directory for images
-    const tempDir = path.join(__dirname, 'temp-images');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
+  // Create temporary directory for images
+  const tempDir = path.join(__dirname, 'temp-images');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  // Convert PDF to images using pdf-poppler
+  console.log(`🖼️  Converting PDF to images...`);
+
+  const options = {
+    format: 'png',
+    out_dir: tempDir,
+    out_prefix: 'page',
+    scale: 2.0 // Higher scale for better OCR
+  };
+
+  await pdfPoppler.convert(pdfPath, options);
+
+  // Get all generated images
+  const files = fs.readdirSync(tempDir).filter(file => file.endsWith('.png'));
+  files.sort(); // Ensure pages are in order
+
+  console.log(`📄 Total pages: ${files.length}`);
+
+  // Perform OCR on each image
+  console.log(`🔍 Starting OCR extraction...`);
+
+  const worker = await Tesseract.createWorker('eng', 1, {
+    logger: m => {
+      if (m.status === 'recognizing text') {
+        process.stdout.write(`\r   Page ${m.page}/${files.length} - ${(m.progress * 100).toFixed(0)}%`);
+      }
     }
+  });
 
-    // Convert PDF to images using pdf-poppler
-    console.log(`🖼️  Converting PDF to images...`);
+  let allText = '';
 
-    const options = {
-      format: 'png',
-      out_dir: tempDir,
-      out_prefix: 'page',
-      scale: 2.0 // Higher scale for better OCR
-    };
+  for (let i = 0; i < files.length; i++) {
+    const imagePath = path.join(tempDir, files[i]);
+    console.log(`\n   Processing page ${i + 1}/${files.length}...`);
 
-    await pdfPoppler.convert(pdfPath, options);
+    const { data: { text } } = await worker.recognize(imagePath);
+    allText += text + '\n\n';
+
+    // Clean up temporary image
+    fs.unlinkSync(imagePath);
+  }
+
+  await worker.terminate();
+
+  // Clean up temp directory
+  fs.rmdirSync(tempDir);
+
+  console.log(`\n✅ OCR extraction complete!`);
+  console.log(`📝 Extracted ${allText.length} characters`);
+
+  return allText;
+}
 
     // Get all generated images
     const files = fs.readdirSync(tempDir).filter(file => file.endsWith('.png'));
@@ -118,6 +160,57 @@ async function extractTextFromPDF(pdfPath, handbookName) {
     console.log(`📝 Extracted ${allText.length} characters`);
 
     return allText;
+  } catch (error) {
+    console.error(`❌ Error processing ${handbookName}:`, error.message);
+    throw error;
+  }
+}
+    };
+
+    await pdfPoppler.convert(pdfPath, options);
+
+    // Get all generated images
+    const files = fs.readdirSync(tempDir).filter(file => file.endsWith('.png'));
+    files.sort(); // Ensure pages are in order
+
+    console.log(`📄 Total pages: ${files.length}`);
+
+    // Perform OCR on each image
+    console.log(`🔍 Starting OCR extraction...`);
+    
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          process.stdout.write(`\r   Page ${m.page}/${files.length} - ${(m.progress * 100).toFixed(0)}%`);
+        }
+      }
+    });
+
+    let allText = '';
+    
+    for (let i = 0; i < files.length; i++) {
+      const imagePath = path.join(tempDir, files[i]);
+      console.log(`\n   Processing page ${i + 1}/${files.length}...`);
+      
+      const { data: { text } } = await worker.recognize(imagePath);
+      allText += text + '\n\n';
+      
+      // Clean up temporary image
+      fs.unlinkSync(imagePath);
+    }
+    
+    await worker.terminate();
+
+    // Clean up temp directory
+    fs.rmdirSync(tempDir);
+
+    console.log(`\n✅ OCR extraction complete!`);
+    console.log(`📝 Extracted ${allText.length} characters`);
+
+    return allText;
+  } catch (error) {
+    console.error(`❌ Error processing ${handbookName}:`, error.message);
+    throw error;
   }
 }
 
@@ -130,7 +223,7 @@ async function extractTextFromPDF(pdfPath, handbookName) {
 function parseHandbookText(text, handbookType) {
   const sections = [];
   const lines = text.split('\n').filter(line => line.trim());
-
+  
   let currentSection = null;
   let currentContent = [];
 
@@ -153,10 +246,10 @@ function parseHandbookText(text, handbookType) {
 
   for (const line of lines) {
     const trimmedLine = line.trim();
-
+    
     // Check if this line is a section header
     const isSectionHeader = sectionPatterns.some(pattern => pattern.test(trimmedLine));
-
+    
     if (isSectionHeader && trimmedLine.length < 100) {
       // Save previous section if exists
       if (currentSection) {
@@ -165,7 +258,7 @@ function parseHandbookText(text, handbookType) {
           content: currentContent.join('\n').trim()
         });
       }
-
+      
       // Start new section
       currentSection = trimmedLine;
       currentContent = [];
@@ -224,14 +317,14 @@ async function processAllHandbooks() {
     try {
       // Extract text from PDF
       const extractedText = await extractTextFromPDF(handbook.path, handbook.name);
-
+      
       // Parse text into structured format
       const handbookData = parseHandbookText(extractedText, handbook.type);
-
+      
       // Save to JSON file
-      const filename = `${handbook.type}-handbook.json`;
+      const filename = `${handbook.type.toLowerCase()}-handbook.json`;
       saveHandbookData(handbookData, filename);
-
+      
       results.push({
         name: handbook.name,
         type: handbook.type,
@@ -254,7 +347,7 @@ async function processAllHandbooks() {
   console.log('\n========================================');
   console.log('  EXTRACTION SUMMARY');
   console.log('========================================');
-
+  
   results.forEach(result => {
     if (result.status === 'success') {
       console.log(`✅ ${result.name}: ${result.sections} sections, ${result.characters} characters`);

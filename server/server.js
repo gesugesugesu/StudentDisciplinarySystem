@@ -1,9 +1,29 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Rate limiting middleware
+// General API limit: 100 requests per minute
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter limit for auth routes (login/register): 10 attempts per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts, please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Initialize database connection
 const { initializeDatabase } = require('./database/db');
@@ -44,6 +64,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Apply general rate limit to all API routes
+app.use('/api', generalLimiter);
+
 // Health check - respond immediately (doesn't require database)
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
@@ -54,7 +77,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/incidents', require('./routes/incidents'));
 app.use('/api/student-records', require('./routes/studentRecords'));

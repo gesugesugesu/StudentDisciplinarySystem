@@ -112,19 +112,20 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
+    // Check status BEFORE password to prevent timing attacks
     if (user.status !== 'approved') {
       let message = 'Account not approved';
       if (user.status === 'pending') message = 'Your account is pending approval.';
       else if (user.status === 'rejected') message = 'Your account registration has been rejected.';
       else if (user.status === 'suspended') message = 'Your account is suspended.';
       return res.status(403).json({ error: message });
+    }
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // For students, check if student record exists and create if not
